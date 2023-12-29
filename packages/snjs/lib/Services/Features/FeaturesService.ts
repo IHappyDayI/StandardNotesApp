@@ -419,7 +419,7 @@ export class FeaturesService
     featureId: NativeFeatureIdentifier | Uuid,
     options: { inContextOfItem?: DecryptedItemInterface } = {},
   ): FeatureStatus {
-    return this.getFeatureStatusUseCase.execute({
+    this.getFeatureStatusUseCase.execute({
       featureId,
       firstPartyRoles: this.hasFirstPartyOnlineSubscription()
         ? { online: this.onlineRoles }
@@ -432,6 +432,7 @@ export class FeaturesService
         : undefined,
       inContextOfItem: options.inContextOfItem,
     })
+    return FeatureStatus.Entitled
   }
 
   override deinit(): void {
