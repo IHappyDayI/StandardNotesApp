@@ -37,6 +37,7 @@ import NotEntitledBanner from '../ComponentView/NotEntitledBanner'
 import AutoFocusPlugin from './Plugins/AutoFocusPlugin'
 import usePreference from '@/Hooks/usePreference'
 import BlockPickerMenuPlugin from './Plugins/BlockPickerPlugin/BlockPickerPlugin'
+import MarkdownPastePlugin from './Plugins/MarkdownPastePlugin/MarkdownPastePlugin'
 
 export const SuperNotePreviewCharLimit = 160
 
@@ -205,6 +206,7 @@ export const SuperEditor: FunctionComponent<Props> = ({
                 readonly={note.current.locked || readonly}
               >
                 <ItemSelectionPlugin currentNote={note.current} />
+                <MarkdownPastePlugin />
                 <FilePlugin currentNote={note.current} />
                 <ItemBubblePlugin />
                 <GetMarkdownPlugin ref={getMarkdownPlugin} />
