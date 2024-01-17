@@ -6,14 +6,14 @@ import {
   PASTE_COMMAND,
   $getSelection,
   $createParagraphNode,
-  $isParagraphNode,
-  $isTextNode,
-  RangeSelection,
   $setSelection,
+  $isRangeSelection,
 } from 'lexical'
 import { $convertFromMarkdownString } from '../../Lexical/Utils/MarkdownImport'
 import { MarkdownTransformers } from '../../MarkdownTransformers'
-import { LexicalNode } from 'lexical/LexicalNode'
+import { $isQuoteNode } from '@lexical/rich-text'
+import { $isCodeNode } from '@lexical/code'
+import { $isCollapsibleTitleNode } from '../CollapsiblePlugin/CollapsibleTitleNode'
 
 export default function MarkdownPastePlugin(): JSX.Element | null {
   const [editor] = useLexicalComposerContext()
@@ -28,7 +28,12 @@ export default function MarkdownPastePlugin(): JSX.Element | null {
           }
 
           const selection = $getSelection()
-          if (!selection) {
+          if (!$isRangeSelection(selection)) {
+            return false
+          }
+
+          const focusedNode = selection.focus.getNode()
+          if ($isQuoteNode(focusedNode) || $isCodeNode(focusedNode) || $isCollapsibleTitleNode(focusedNode)) {
             return false
           }
 
@@ -50,7 +55,7 @@ export default function MarkdownPastePlugin(): JSX.Element | null {
 
           const newNode = $createParagraphNode()
           $convertFromMarkdownString(text, MarkdownTransformers, newNode)
-          selection.insertNodes(newNode.getChildren())
+            selection.insertNodes(newNode.getChildren())
 
           // TODO: Verfy test cases
           // * pasting into table
