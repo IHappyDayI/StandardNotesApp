@@ -53,8 +53,22 @@ export default function MarkdownPastePlugin(): JSX.Element | null {
           $setSelection(null)
 
           const newNode = $createParagraphNode()
+
           $convertFromMarkdownString(text, MarkdownTransformers, newNode)
+
+          const entireNodeSelected =
+            selection.anchor.offset == 0 && selection.focus.getNode().getTextContentSize() == selection.focus.offset
+
+          if (entireNodeSelected) {
+            selection.anchor.offset = 1
             selection.insertNodes(newNode.getChildren())
+            selection.anchor.offset = 0
+            selection.deleteCharacter(false)
+            // const previousSelection = $getPreviousSelection()
+            // $setSelection(previousSelection.clone())
+          } else {
+            selection.insertNodes(newNode.getChildren())
+          }
 
           // TODO: verify test cases
           // * pasting into table
