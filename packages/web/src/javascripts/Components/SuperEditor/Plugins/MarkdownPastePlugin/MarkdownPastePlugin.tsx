@@ -40,14 +40,13 @@ export default function MarkdownPastePlugin(): JSX.Element | null {
           const text = event.clipboardData.getData('text/plain')
 
           // Make sure the selection is not backwards, as that causes issues when inserting.
-          const rangeSelection = selection as RangeSelection
-          if (rangeSelection && rangeSelection.isBackward()) {
-            const anchor = rangeSelection.anchor
-            rangeSelection.anchor = rangeSelection.focus
-            rangeSelection.focus = anchor
+          if (selection.isBackward()) {
+            const anchor = selection.anchor
+            selection.anchor = selection.focus
+            selection.focus = anchor
           }
 
-          // TODO: Handle case where an entire paragraph is selcted
+          // TODO: Handle case where an entire paragraph is selected
           // TODO: Maybe handle merging of nodes at the beginning and end of the pasted text. If you paste a heading into a normal text, there should be a linebreak I guess. Currently the heading gets converted to normal text.
 
           // Clear the selection to prevent issues when calling $convertFromMarkdownString() and the text is just simple, non-markdown text.
@@ -57,10 +56,13 @@ export default function MarkdownPastePlugin(): JSX.Element | null {
           $convertFromMarkdownString(text, MarkdownTransformers, newNode)
             selection.insertNodes(newNode.getChildren())
 
-          // TODO: Verfy test cases
+          // TODO: verify test cases
           // * pasting into table
           // * pasting into list
           // * pasting into code block
+          // * pasting into a link
+          // * pasting into a quote
+          // * pasting into a collapsible node
           // * pasting complex markdown stuff
           // * pasting a simple string
           // * pasting an image
@@ -73,6 +75,7 @@ export default function MarkdownPastePlugin(): JSX.Element | null {
           // * pasting when having selected two words spanning over two lines
           // * pasting when having selected different nodes than textNodes
           // * pasting when having selected an entire paragraph with the focus at the beginning of the paragraph
+          // * trying to replace more than one paragraph node
 
           return true
         },
@@ -82,20 +85,4 @@ export default function MarkdownPastePlugin(): JSX.Element | null {
   })
 
   return null
-}
-
-const MARKDOWN_EMPTY_LINE_REG_EXP = /^\s{0,3}$/
-
-function isEmptyParagraph(node: LexicalNode): boolean {
-  if (!$isParagraphNode(node)) {
-    return false
-  }
-
-  const firstChild = node.getFirstChild()
-  return (
-    firstChild == null ||
-    (node.getChildrenSize() === 1 &&
-      $isTextNode(firstChild) &&
-      MARKDOWN_EMPTY_LINE_REG_EXP.test(firstChild.getTextContent()))
-  )
 }
