@@ -43,6 +43,7 @@ export enum PrefKey {
   SuperNoteExportFormat = 'superNoteExportFormat',
   SuperNoteExportEmbedBehavior = 'superNoteExportEmbedBehavior',
   SuperNoteExportUseMDFrontmatter = 'superNoteExportUseMDFrontmatter',
+  SuperNoteExportPDFPageSize = 'superNoteExportPDFPageSize',
   AuthenticatorNames = 'authenticatorNames',
   PaneGesturesEnabled = 'paneGesturesEnabled',
   ComponentPreferences = 'componentPreferences',
@@ -87,9 +88,10 @@ export type PrefValue = {
   [PrefKey.MomentsDefaultTagUuid]: string | undefined
   [PrefKey.ClipperDefaultTagUuid]: string | undefined
   [PrefKey.SystemViewPreferences]: Partial<Record<SystemViewId, TagPreferences>>
-  [PrefKey.SuperNoteExportFormat]: 'json' | 'md' | 'html'
+  [PrefKey.SuperNoteExportFormat]: 'json' | 'md' | 'html' | 'pdf'
   [PrefKey.SuperNoteExportEmbedBehavior]: 'reference' | 'inline' | 'separate'
   [PrefKey.SuperNoteExportUseMDFrontmatter]: boolean
+  [PrefKey.SuperNoteExportPDFPageSize]: 'A3' | 'A4' | 'LETTER' | 'LEGAL' | 'TABLOID'
   [PrefKey.AuthenticatorNames]: string
   [PrefKey.PaneGesturesEnabled]: boolean
   [PrefKey.ComponentPreferences]: AllComponentPreferences

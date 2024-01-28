@@ -29,6 +29,8 @@ export const TYPES = {
   SessionManager: Symbol.for('SessionManager'),
   SubscriptionManager: Symbol.for('SubscriptionManager'),
   HistoryManager: Symbol.for('HistoryManager'),
+  SyncFrequencyGuard: Symbol.for('SyncFrequencyGuard'),
+  SyncBackoffService: Symbol.for('SyncBackoffService'),
   SyncService: Symbol.for('SyncService'),
   ProtectionService: Symbol.for('ProtectionService'),
   UserService: Symbol.for('UserService'),
