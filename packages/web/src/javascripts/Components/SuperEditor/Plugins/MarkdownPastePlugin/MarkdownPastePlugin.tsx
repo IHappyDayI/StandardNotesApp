@@ -6,8 +6,10 @@ import {
   PASTE_COMMAND,
   $getSelection,
   $createParagraphNode,
-  $setSelection,
   $isRangeSelection,
+  $isElementNode,
+  $setSelection,
+  $getPreviousSelection,
 } from 'lexical'
 import { $convertFromMarkdownString } from '../../Lexical/Utils/MarkdownImport'
 import { MarkdownTransformers } from '../../MarkdownTransformers'
@@ -27,7 +29,7 @@ export default function MarkdownPastePlugin(): JSX.Element | null {
             return false
           }
 
-          const selection = $getSelection()
+          let selection = $getSelection()
           if (!$isRangeSelection(selection)) {
             return false
           }
@@ -46,29 +48,33 @@ export default function MarkdownPastePlugin(): JSX.Element | null {
             selection.focus = anchor
           }
 
-          // TODO: Handle case where an entire paragraph is selected
-          // TODO: Maybe handle merging of nodes at the beginning and end of the pasted text. If you paste a heading into a normal text, there should be a linebreak I guess. Currently the heading gets converted to normal text.
-
-          // Clear the selection to prevent issues when calling $convertFromMarkdownString() and the text is just simple, non-markdown text.
-          $setSelection(null)
-
-          const newNode = $createParagraphNode()
-
-          $convertFromMarkdownString(text, MarkdownTransformers, newNode)
-
+          const focusNode = selection.focus.getNode()
           const entireNodeSelected =
-            selection.anchor.offset == 0 && selection.focus.getNode().getTextContentSize() == selection.focus.offset
+            selection.anchor.offset == 0 && focusNode.getTextContentSize() == selection.focus.offset
+
+          const tempParagraph = $createParagraphNode()
+          $convertFromMarkdownString(text, MarkdownTransformers, tempParagraph, true)
+          const children = tempParagraph.getChildren()
+
+          const prevSelection = $getPreviousSelection()
+          if (!$isRangeSelection(prevSelection)) {
+            return false
+          }
+          $setSelection(prevSelection.clone())
+
+          const textWasNotParsedAsMarkdown = children.length == 1 && $isElementNode(children[0])
+          if (textWasNotParsedAsMarkdown) {
+            return false
+          }
 
           if (entireNodeSelected) {
-            selection.anchor.offset = 1
-            selection.insertNodes(newNode.getChildren())
-            selection.anchor.offset = 0
-            selection.deleteCharacter(false)
-            // const previousSelection = $getPreviousSelection()
-            // $setSelection(previousSelection.clone())
-          } else {
-            selection.insertNodes(newNode.getChildren())
+            selection = $getSelection()
+            if (!$isRangeSelection(selection)) {
+              return false
+            }
           }
+
+          selection.insertNodes(children)
 
           // TODO: verify test cases
           // * pasting into table
@@ -77,6 +83,7 @@ export default function MarkdownPastePlugin(): JSX.Element | null {
           // * pasting into a link
           // * pasting into a quote
           // * pasting into a collapsible node
+          // * pasting into a heading
           // * pasting complex markdown stuff
           // * pasting a simple string
           // * pasting an image
