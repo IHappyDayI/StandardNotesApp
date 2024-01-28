@@ -29,6 +29,11 @@ export default function MarkdownPastePlugin(): JSX.Element | null {
             return false
           }
 
+          const text = event.clipboardData.getData('text/plain')
+          if (!text) {
+            return false
+          }
+
           let selection = $getSelection()
           if (!$isRangeSelection(selection)) {
             return false
@@ -38,8 +43,6 @@ export default function MarkdownPastePlugin(): JSX.Element | null {
           if ($isQuoteNode(focusedNode) || $isCodeNode(focusedNode) || $isCollapsibleTitleNode(focusedNode)) {
             return false
           }
-
-          const text = event.clipboardData.getData('text/plain')
 
           // Make sure the selection is not backwards, as that causes issues when inserting.
           if (selection.isBackward()) {
