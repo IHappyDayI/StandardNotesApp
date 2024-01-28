@@ -51,9 +51,9 @@ export default function MarkdownPastePlugin(): JSX.Element | null {
             selection.focus = anchor
           }
 
-          const focusNode = selection.focus.getNode()
+          // This is an edge case that gets handled later. We need to check the selection at this point though, because it changes in the next step.
           const entireNodeSelected =
-            selection.anchor.offset == 0 && focusNode.getTextContentSize() == selection.focus.offset
+            selection.anchor.offset == 0 && focusedNode.getTextContentSize() == selection.focus.offset
 
           const tempParagraph = $createParagraphNode()
           $convertFromMarkdownString(text, MarkdownTransformers, tempParagraph, true)
