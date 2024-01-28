@@ -55,16 +55,23 @@ export default function MarkdownPastePlugin(): JSX.Element | null {
           const entireNodeSelected =
             selection.anchor.offset == 0 && focusedNode.getTextContentSize() == selection.focus.offset
 
+          // =======================================
+          // TODO: Handle pasting at the beginning of headings / when selecting an entire child node of a heading
+          // =======================================
+
+          // Convert the text from the clipboard from markdown to lexical nodes without inserting them into the editor. This updates the selection.
           const tempParagraph = $createParagraphNode()
           $convertFromMarkdownString(text, MarkdownTransformers, tempParagraph, true)
           const children = tempParagraph.getChildren()
 
+          // Restore the initial selection.
           const prevSelection = $getPreviousSelection()
           if (!$isRangeSelection(prevSelection)) {
             return false
           }
           $setSelection(prevSelection.clone())
 
+          // Don't do anything if the text failed to parse as markdown and let the default implementation handle the paste event
           const textWasNotParsedAsMarkdown = children.length == 1 && $isElementNode(children[0])
           if (textWasNotParsedAsMarkdown) {
             return false
