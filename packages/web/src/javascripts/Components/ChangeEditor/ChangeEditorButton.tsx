@@ -11,10 +11,11 @@ import { NoteType, noteTypeForEditorIdentifier } from '@standardnotes/snjs'
 
 type Props = {
   noteViewController?: NoteViewController
+  onClick?: () => void
   onClickPreprocessing?: () => Promise<void>
 }
 
-const ChangeEditorButton: FunctionComponent<Props> = ({ noteViewController, onClickPreprocessing }: Props) => {
+const ChangeEditorButton: FunctionComponent<Props> = ({ noteViewController, onClick, onClickPreprocessing }: Props) => {
   const application = useApplication()
 
   const note = application.notesController.firstSelectedNote
@@ -48,11 +49,16 @@ const ChangeEditorButton: FunctionComponent<Props> = ({ noteViewController, onCl
       await onClickPreprocessing()
     }
     setIsOpen(willMenuOpen)
-  }, [onClickPreprocessing, isOpen])
+    if (onClick) {
+      onClick()
+    }
+  }, [isOpen, onClickPreprocessing, onClick])
 
   useEffect(() => {
     return application.keyboardService.addCommandHandler({
       command: CHANGE_EDITOR_COMMAND,
+      category: 'Current note',
+      description: 'Change note type',
       onKeyDown: () => {
         void toggleMenu()
       },

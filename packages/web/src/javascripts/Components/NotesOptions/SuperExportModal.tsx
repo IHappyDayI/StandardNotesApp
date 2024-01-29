@@ -2,10 +2,10 @@ import { PrefKey, PrefValue, SNNote } from '@standardnotes/snjs'
 import { useApplication } from '../ApplicationProvider'
 import Modal from '../Modal/Modal'
 import usePreference from '@/Hooks/usePreference'
-import RadioButtonGroup from '../RadioButtonGroup/RadioButtonGroup'
 import { useEffect } from 'react'
 import Switch from '../Switch/Switch'
 import { noteHasEmbeddedFiles } from '@/Utils/NoteExportUtils'
+import Dropdown from '../Dropdown/Dropdown'
 
 type Props = {
   notes: SNNote[]
@@ -15,9 +15,11 @@ type Props = {
 
 const SuperExportModal = ({ notes, exportNotes, close }: Props) => {
   const application = useApplication()
+
   const superNoteExportFormat = usePreference(PrefKey.SuperNoteExportFormat)
   const superNoteExportEmbedBehavior = usePreference(PrefKey.SuperNoteExportEmbedBehavior)
   const superNoteExportUseMDFrontmatter = usePreference(PrefKey.SuperNoteExportUseMDFrontmatter)
+  const superNoteExportPDFPageSize = usePreference(PrefKey.SuperNoteExportPDFPageSize)
 
   useEffect(() => {
     if (superNoteExportFormat === 'json' && superNoteExportEmbedBehavior === 'separate') {
@@ -26,9 +28,14 @@ const SuperExportModal = ({ notes, exportNotes, close }: Props) => {
     if (superNoteExportFormat === 'md' && superNoteExportEmbedBehavior === 'reference') {
       void application.setPreference(PrefKey.SuperNoteExportEmbedBehavior, 'separate')
     }
+    if (superNoteExportFormat === 'pdf' && superNoteExportEmbedBehavior !== 'inline') {
+      void application.setPreference(PrefKey.SuperNoteExportEmbedBehavior, 'inline')
+    }
   }, [application, superNoteExportEmbedBehavior, superNoteExportFormat])
 
   const someNotesHaveEmbeddedFiles = notes.some(noteHasEmbeddedFiles)
+
+  const canShowEmbeddedFileOptions = !['json', 'pdf'].includes(superNoteExportFormat)
 
   return (
     <Modal
@@ -54,22 +61,28 @@ const SuperExportModal = ({ notes, exportNotes, close }: Props) => {
       ]}
     >
       <div className="mb-2">
-        <div className="mb-3 text-base">We detected your selection includes Super notes.</div>
-        <div className="mb-1">What format do you want to export them in?</div>
-        <RadioButtonGroup
-          items={[
-            { label: 'Super (.json)', value: 'json' },
-            { label: 'Markdown (.md)', value: 'md' },
-            { label: 'HTML', value: 'html' },
-          ]}
-          value={superNoteExportFormat}
-          onChange={(value) => {
-            void application.setPreference(
-              PrefKey.SuperNoteExportFormat,
-              value as PrefValue[PrefKey.SuperNoteExportFormat],
-            )
-          }}
-        />
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+          <div className="text-base">Choose export format {notes.length > 1 ? 'for Super notes' : ''}</div>
+          <Dropdown
+            label="Export format"
+            items={[
+              { label: 'Super (.json)', value: 'json' },
+              { label: 'Markdown (.md)', value: 'md' },
+              { label: 'HTML', value: 'html' },
+              { label: 'PDF', value: 'pdf' },
+            ]}
+            value={superNoteExportFormat}
+            onChange={(value) => {
+              void application.setPreference(
+                PrefKey.SuperNoteExportFormat,
+                value as PrefValue[PrefKey.SuperNoteExportFormat],
+              )
+            }}
+            classNameOverride={{
+              wrapper: 'w-full md:w-fit',
+            }}
+          />
+        </div>
         {superNoteExportFormat === 'md' && (
           <div className="mt-2 text-xs text-passive-0">
             Note that conversion to Markdown is not lossless. Some features like collapsible blocks and formatting like
@@ -77,6 +90,36 @@ const SuperExportModal = ({ notes, exportNotes, close }: Props) => {
           </div>
         )}
       </div>
+      {superNoteExportFormat === 'pdf' && (
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
+          <div className="text-base">Page size</div>
+          <Dropdown
+            label="Page size"
+            items={
+              [
+                { label: 'A3', value: 'A3' },
+                { label: 'A4', value: 'A4' },
+                { label: 'Letter', value: 'LETTER' },
+                { label: 'Legal', value: 'LEGAL' },
+                { label: 'Tabloid', value: 'TABLOID' },
+              ] satisfies {
+                label: string
+                value: PrefValue[PrefKey.SuperNoteExportPDFPageSize]
+              }[]
+            }
+            value={superNoteExportPDFPageSize}
+            onChange={(value) => {
+              void application.setPreference(
+                PrefKey.SuperNoteExportPDFPageSize,
+                value as PrefValue[PrefKey.SuperNoteExportPDFPageSize],
+              )
+            }}
+            classNameOverride={{
+              wrapper: 'w-full md:w-fit',
+            }}
+          />
+        </div>
+      )}
       {superNoteExportFormat === 'md' && (
         <div className="mt-4">
           <Switch
@@ -93,10 +136,11 @@ const SuperExportModal = ({ notes, exportNotes, close }: Props) => {
           </Switch>
         </div>
       )}
-      {superNoteExportFormat !== 'json' && someNotesHaveEmbeddedFiles && (
-        <div className="mb-2 mt-4">
-          <div className="mb-1">How do you want embedded files to be handled?</div>
-          <RadioButtonGroup
+      {canShowEmbeddedFileOptions && someNotesHaveEmbeddedFiles && (
+        <div className="mb-2 mt-4 flex flex-wrap items-center justify-between gap-2">
+          <div className="text-base">Embedded files</div>
+          <Dropdown
+            label="Embedded files"
             items={[
               { label: 'Inline', value: 'inline' },
               { label: 'Export separately', value: 'separate' },

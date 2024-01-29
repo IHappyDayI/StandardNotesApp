@@ -3,6 +3,24 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.53.0](https://github.com/standardnotes/app/compare/@standardnotes/models@1.52.0...@standardnotes/models@1.53.0) (2024-01-27)
+
+### Features
+
+* Added "Page size" option when exporting Super notes as PDF ([853fab5](https://github.com/standardnotes/app/commit/853fab53ab37567acc23d2f1c5bf8c8d0c4a573b))
+
+# [1.52.0](https://github.com/standardnotes/app/compare/@standardnotes/models@1.51.0...@standardnotes/models@1.52.0) (2024-01-24)
+
+### Features
+
+* Super notes can now be exported as PDF ([#2776](https://github.com/standardnotes/app/issues/2776)) ([418d1a7](https://github.com/standardnotes/app/commit/418d1a7371d8fb981de80737a9d1ec4d7772476c))
+
+# [1.51.0](https://github.com/standardnotes/app/compare/@standardnotes/models@1.50.2...@standardnotes/models@1.51.0) (2024-01-20)
+
+### Features
+
+* Editing large notes (greater than 1.5MB) will result in more optimized syncing, in which changes are saved locally immediately, but sync with the server less frequently (roughly every 30 seconds rather than after every change). ([#2768](https://github.com/standardnotes/app/issues/2768)) ([396ee3f](https://github.com/standardnotes/app/commit/396ee3f449c612600bbbe3294c61dc8be46ea365))
+
 ## [1.50.2](https://github.com/standardnotes/app/compare/@standardnotes/models@1.50.1...@standardnotes/models@1.50.2) (2023-12-28)
 
 **Note:** Version bump only for package @standardnotes/models

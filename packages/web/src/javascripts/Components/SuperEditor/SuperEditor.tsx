@@ -6,6 +6,7 @@ import {
   FeatureStatus,
   GetSuperNoteFeature,
   EditorLineHeightValues,
+  WebAppEvent,
 } from '@standardnotes/snjs'
 import { CSSProperties, FunctionComponent, useCallback, useEffect, useRef, useState } from 'react'
 import { BlocksEditor } from './BlocksEditor'
@@ -27,7 +28,7 @@ import {
   ChangeEditorFunction,
 } from './Plugins/ChangeContentCallback/ChangeContentCallback'
 import { useCommandService } from '@/Components/CommandProvider'
-import { SUPER_SHOW_MARKDOWN_PREVIEW } from '@standardnotes/ui-services'
+import { SUPER_SHOW_MARKDOWN_PREVIEW, getPrimaryModifier } from '@standardnotes/ui-services'
 import { SuperNoteMarkdownPreview } from './SuperNoteMarkdownPreview'
 import GetMarkdownPlugin, { GetMarkdownPluginInterface } from './Plugins/GetMarkdownPlugin/GetMarkdownPlugin'
 import { useResponsiveEditorFontSize } from '@/Utils/getPlaintextFontSize'
@@ -37,6 +38,9 @@ import NotEntitledBanner from '../ComponentView/NotEntitledBanner'
 import AutoFocusPlugin from './Plugins/AutoFocusPlugin'
 import usePreference from '@/Hooks/usePreference'
 import BlockPickerMenuPlugin from './Plugins/BlockPickerPlugin/BlockPickerPlugin'
+import { EditorEventSource } from '@/Types/EditorEventSource'
+import { ElementIds } from '@/Constants/ElementIDs'
+import MarkdownPastePlugin from './Plugins/MarkdownPastePlugin/MarkdownPastePlugin'
 
 export const SuperNotePreviewCharLimit = 160
 
@@ -80,9 +84,47 @@ export const SuperEditor: FunctionComponent<Props> = ({
   useEffect(() => {
     return commandService.addCommandHandler({
       command: SUPER_SHOW_MARKDOWN_PREVIEW,
+      category: 'Super notes',
+      description: 'Show markdown preview for current note',
       onKeyDown: () => setShowMarkdownPreview(true),
     })
   }, [commandService])
+
+  useEffect(() => {
+    const platform = application.platform
+    const primaryModifier = getPrimaryModifier(application.platform)
+
+    return commandService.registerExternalKeyboardShortcutHelpItems([
+      {
+        key: 'b',
+        modifiers: [primaryModifier],
+        description: 'Bold',
+        category: 'Formatting',
+        platform: platform,
+      },
+      {
+        key: 'i',
+        modifiers: [primaryModifier],
+        description: 'Italic',
+        category: 'Formatting',
+        platform: platform,
+      },
+      {
+        key: 'u',
+        modifiers: [primaryModifier],
+        description: 'Underline',
+        category: 'Formatting',
+        platform: platform,
+      },
+      {
+        key: 'k',
+        modifiers: [primaryModifier],
+        description: 'Link',
+        category: 'Formatting',
+        platform: platform,
+      },
+    ])
+  }, [application.platform, commandService])
 
   const closeMarkdownPreview = useCallback(() => {
     setShowMarkdownPreview(false)
@@ -179,8 +221,13 @@ export const SuperEditor: FunctionComponent<Props> = ({
     }
   }, [])
 
+  const onFocus = useCallback(() => {
+    application.notifyWebEvent(WebAppEvent.EditorDidFocus, { eventSource: EditorEventSource.UserInteraction })
+  }, [application])
+
   return (
     <div
+      id={ElementIds.SuperEditor}
       className="font-editor relative flex h-full w-full flex-col"
       style={
         {
@@ -203,8 +250,10 @@ export const SuperEditor: FunctionComponent<Props> = ({
                 previewLength={SuperNotePreviewCharLimit}
                 spellcheck={spellcheck}
                 readonly={note.current.locked || readonly}
+                onFocus={onFocus}
               >
                 <ItemSelectionPlugin currentNote={note.current} />
+                <MarkdownPastePlugin />
                 <FilePlugin currentNote={note.current} />
                 <ItemBubblePlugin />
                 <GetMarkdownPlugin ref={getMarkdownPlugin} />
