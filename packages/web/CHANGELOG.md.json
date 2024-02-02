@@ -1,6 +1,254 @@
 {
   "versions": [
     {
+      "version": "3.187.1",
+      "title": "[3.187.1](https://github.com/standardnotes/app/compare/@standardnotes/web@3.187.0...@standardnotes/web@3.187.1) (2024-01-28)",
+      "date": null,
+      "body": "### Bug Fixes\n\n* The shortcut for displaying the keyboard shortcut help dialog has been changed to `Ctrl + /` ([5a49005](https://github.com/standardnotes/app/commit/5a49005e7961ed254667f62cdba5deba2c792fa7))",
+      "parsed": {
+        "_": [
+          "The shortcut for displaying the keyboard shortcut help dialog has been changed to Ctrl + / (5a49005)"
+        ],
+        "Bug Fixes": [
+          "The shortcut for displaying the keyboard shortcut help dialog has been changed to Ctrl + / (5a49005)"
+        ]
+      }
+    },
+    {
+      "version": "3.187.0",
+      "title": "[3.187.0](https://github.com/standardnotes/app/compare/@standardnotes/web@3.186.1...@standardnotes/web@3.187.0) (2024-01-27)",
+      "date": null,
+      "body": "### Features\n\n* Added \"Keyboard shortcuts\" help dialog. Can be opened by pressing Shift + ? ([ff3c45b](https://github.com/standardnotes/app/commit/ff3c45ba359fb53520310c2c44bd368255e31023))\n* Added \"Page size\" option when exporting Super notes as PDF ([853fab5](https://github.com/standardnotes/app/commit/853fab53ab37567acc23d2f1c5bf8c8d0c4a573b))",
+      "parsed": {
+        "_": [
+          "Added \"Keyboard shortcuts\" help dialog. Can be opened by pressing Shift + ? (ff3c45b)",
+          "Added \"Page size\" option when exporting Super notes as PDF (853fab5)"
+        ],
+        "Features": [
+          "Added \"Keyboard shortcuts\" help dialog. Can be opened by pressing Shift + ? (ff3c45b)",
+          "Added \"Page size\" option when exporting Super notes as PDF (853fab5)"
+        ]
+      }
+    },
+    {
+      "version": "3.186.1",
+      "title": "[3.186.1](https://github.com/standardnotes/app/compare/@standardnotes/web@3.186.0...@standardnotes/web@3.186.1) (2024-01-24)",
+      "date": null,
+      "body": "**Note:** Version bump only for package @standardnotes/web",
+      "parsed": {
+        "_": [
+          "Note: Version bump only for package @standardnotes/web"
+        ]
+      }
+    },
+    {
+      "version": "3.186.0",
+      "title": "[3.186.0](https://github.com/standardnotes/app/compare/@standardnotes/web@3.185.4...@standardnotes/web@3.186.0) (2024-01-24)",
+      "date": null,
+      "body": "### Features\n\n* Super notes can now be exported as PDF ([#2776](https://github.com/standardnotes/app/issues/2776)) ([418d1a7](https://github.com/standardnotes/app/commit/418d1a7371d8fb981de80737a9d1ec4d7772476c))",
+      "parsed": {
+        "_": [
+          "Super notes can now be exported as PDF (#2776) (418d1a7)"
+        ],
+        "Features": [
+          "Super notes can now be exported as PDF (#2776) (418d1a7)"
+        ]
+      }
+    },
+    {
+      "version": "3.185.4",
+      "title": "[3.185.4](https://github.com/standardnotes/app/compare/@standardnotes/web@3.185.3...@standardnotes/web@3.185.4) (2024-01-23)",
+      "date": null,
+      "body": "**Note:** Version bump only for package @standardnotes/web",
+      "parsed": {
+        "_": [
+          "Note: Version bump only for package @standardnotes/web"
+        ]
+      }
+    },
+    {
+      "version": "3.185.3",
+      "title": "[3.185.3](https://github.com/standardnotes/app/compare/@standardnotes/web@3.185.2...@standardnotes/web@3.185.3) (2024-01-21)",
+      "date": null,
+      "body": "**Note:** Version bump only for package @standardnotes/web",
+      "parsed": {
+        "_": [
+          "Note: Version bump only for package @standardnotes/web"
+        ]
+      }
+    },
+    {
+      "version": "3.185.2",
+      "title": "[3.185.2](https://github.com/standardnotes/app/compare/@standardnotes/web@3.185.1...@standardnotes/web@3.185.2) (2024-01-20)",
+      "date": null,
+      "body": "**Note:** Version bump only for package @standardnotes/web",
+      "parsed": {
+        "_": [
+          "Note: Version bump only for package @standardnotes/web"
+        ]
+      }
+    },
+    {
+      "version": "3.185.1",
+      "title": "[3.185.1](https://github.com/standardnotes/app/compare/@standardnotes/web@3.185.0...@standardnotes/web@3.185.1) (2024-01-20)",
+      "date": null,
+      "body": "**Note:** Version bump only for package @standardnotes/web",
+      "parsed": {
+        "_": [
+          "Note: Version bump only for package @standardnotes/web"
+        ]
+      }
+    },
+    {
+      "version": "3.185.0",
+      "title": "[3.185.0](https://github.com/standardnotes/app/compare/@standardnotes/web@3.184.5...@standardnotes/web@3.185.0) (2024-01-20)",
+      "date": null,
+      "body": "### Features\n\n* Editing large notes (greater than 1.5MB) will result in more optimized syncing, in which changes are saved locally immediately, but sync with the server less frequently (roughly every 30 seconds rather than after every change). ([#2768](https://github.com/standardnotes/app/issues/2768)) ([396ee3f](https://github.com/standardnotes/app/commit/396ee3f449c612600bbbe3294c61dc8be46ea365))",
+      "parsed": {
+        "_": [
+          "Editing large notes (greater than 1.5MB) will result in more optimized syncing, in which changes are saved locally immediately, but sync with the server less frequently (roughly every 30 seconds rather than after every change). (#2768) (396ee3f)"
+        ],
+        "Features": [
+          "Editing large notes (greater than 1.5MB) will result in more optimized syncing, in which changes are saved locally immediately, but sync with the server less frequently (roughly every 30 seconds rather than after every change). (#2768) (396ee3f)"
+        ]
+      }
+    },
+    {
+      "version": "3.184.5",
+      "title": "[3.184.5](https://github.com/standardnotes/app/compare/@standardnotes/web@3.184.4...@standardnotes/web@3.184.5) (2024-01-17)",
+      "date": null,
+      "body": "**Note:** Version bump only for package @standardnotes/web",
+      "parsed": {
+        "_": [
+          "Note: Version bump only for package @standardnotes/web"
+        ]
+      }
+    },
+    {
+      "version": "3.184.4",
+      "title": "[3.184.4](https://github.com/standardnotes/app/compare/@standardnotes/web@3.184.3...@standardnotes/web@3.184.4) (2024-01-17)",
+      "date": null,
+      "body": "**Note:** Version bump only for package @standardnotes/web",
+      "parsed": {
+        "_": [
+          "Note: Version bump only for package @standardnotes/web"
+        ]
+      }
+    },
+    {
+      "version": "3.184.3",
+      "title": "[3.184.3](https://github.com/standardnotes/app/compare/@standardnotes/web@3.184.2...@standardnotes/web@3.184.3) (2024-01-12)",
+      "date": null,
+      "body": "**Note:** Version bump only for package @standardnotes/web",
+      "parsed": {
+        "_": [
+          "Note: Version bump only for package @standardnotes/web"
+        ]
+      }
+    },
+    {
+      "version": "3.184.2",
+      "title": "[3.184.2](https://github.com/standardnotes/app/compare/@standardnotes/web@3.184.1...@standardnotes/web@3.184.2) (2024-01-11)",
+      "date": null,
+      "body": "**Note:** Version bump only for package @standardnotes/web",
+      "parsed": {
+        "_": [
+          "Note: Version bump only for package @standardnotes/web"
+        ]
+      }
+    },
+    {
+      "version": "3.184.1",
+      "title": "[3.184.1](https://github.com/standardnotes/app/compare/@standardnotes/web@3.184.0...@standardnotes/web@3.184.1) (2024-01-10)",
+      "date": null,
+      "body": "**Note:** Version bump only for package @standardnotes/web",
+      "parsed": {
+        "_": [
+          "Note: Version bump only for package @standardnotes/web"
+        ]
+      }
+    },
+    {
+      "version": "3.184.0",
+      "title": "[3.184.0](https://github.com/standardnotes/app/compare/@standardnotes/web@3.183.44...@standardnotes/web@3.184.0) (2024-01-08)",
+      "date": null,
+      "body": "### Features\n\n* Added option to download multiple files as a zip when using the desktop app or a supported browser ([#2748](https://github.com/standardnotes/app/issues/2748)) ([130b63b](https://github.com/standardnotes/app/commit/130b63b1a51a52c547cc40cfc8352946920c5af3))",
+      "parsed": {
+        "_": [
+          "Added option to download multiple files as a zip when using the desktop app or a supported browser (#2748) (130b63b)"
+        ],
+        "Features": [
+          "Added option to download multiple files as a zip when using the desktop app or a supported browser (#2748) (130b63b)"
+        ]
+      }
+    },
+    {
+      "version": "3.183.44",
+      "title": "[3.183.44](https://github.com/standardnotes/app/compare/@standardnotes/web@3.183.43...@standardnotes/web@3.183.44) (2024-01-08)",
+      "date": null,
+      "body": "**Note:** Version bump only for package @standardnotes/web",
+      "parsed": {
+        "_": [
+          "Note: Version bump only for package @standardnotes/web"
+        ]
+      }
+    },
+    {
+      "version": "3.183.43",
+      "title": "[3.183.43](https://github.com/standardnotes/app/compare/@standardnotes/web@3.183.42...@standardnotes/web@3.183.43) (2024-01-06)",
+      "date": null,
+      "body": "**Note:** Version bump only for package @standardnotes/web",
+      "parsed": {
+        "_": [
+          "Note: Version bump only for package @standardnotes/web"
+        ]
+      }
+    },
+    {
+      "version": "3.183.42",
+      "title": "[3.183.42](https://github.com/standardnotes/app/compare/@standardnotes/web@3.183.41...@standardnotes/web@3.183.42) (2024-01-06)",
+      "date": null,
+      "body": "**Note:** Version bump only for package @standardnotes/web",
+      "parsed": {
+        "_": [
+          "Note: Version bump only for package @standardnotes/web"
+        ]
+      }
+    },
+    {
+      "version": "3.183.41",
+      "title": "[3.183.41](https://github.com/standardnotes/app/compare/@standardnotes/web@3.183.40...@standardnotes/web@3.183.41) (2024-01-05)",
+      "date": null,
+      "body": "**Note:** Version bump only for package @standardnotes/web",
+      "parsed": {
+        "_": [
+          "Note: Version bump only for package @standardnotes/web"
+        ]
+      }
+    },
+    {
+      "version": "3.183.40",
+      "title": "[3.183.40](https://github.com/standardnotes/app/compare/@standardnotes/web@3.183.39...@standardnotes/web@3.183.40) (2024-01-04)",
+      "date": null,
+      "body": "**Note:** Version bump only for package @standardnotes/web",
+      "parsed": {
+        "_": [
+          "Note: Version bump only for package @standardnotes/web"
+        ]
+      }
+    },
+    {
+      "version": "3.183.39",
+      "title": "[3.183.39](https://github.com/standardnotes/app/compare/@standardnotes/web@3.183.38...@standardnotes/web@3.183.39) (2024-01-03)",
+      "date": null,
+      "body": "**Note:** Version bump only for package @standardnotes/web",
+      "parsed": {
+        "_": [
+          "Note: Version bump only for package @standardnotes/web"
+        ]
+      }
+    },
+    {
       "version": "3.183.38",
       "title": "[3.183.38](https://github.com/standardnotes/app/compare/@standardnotes/web@3.183.37...@standardnotes/web@3.183.38) (2024-01-03)",
       "date": null,

@@ -13,7 +13,7 @@ import { FunctionComponent, useCallback, useEffect, useMemo, useState, lazy, use
 import RevisionHistoryModal from '@/Components/RevisionHistoryModal/RevisionHistoryModal'
 import PremiumModalProvider from '@/Hooks/usePremiumModal'
 import ConfirmSignoutContainer from '@/Components/ConfirmSignoutModal/ConfirmSignoutModal'
-import { ToastContainer } from '@standardnotes/toast'
+import { addToast, ToastContainer, ToastType } from '@standardnotes/toast'
 import FilePreviewModalWrapper from '@/Components/FilePreview/FilePreviewModal'
 import FileContextMenuWrapper from '@/Components/FileContextMenu/FileContextMenu'
 import PermissionsModalWrapper from '@/Components/PermissionsModal/PermissionsModalWrapper'
@@ -31,6 +31,7 @@ import ImportModal from '../ImportModal/ImportModal'
 import IosKeyboardClose from '../IosKeyboardClose/IosKeyboardClose'
 import EditorWidthSelectionModalWrapper from '../EditorWidthSelectionModal/EditorWidthSelectionModal'
 import { ProtectionEvent } from '@standardnotes/services'
+import KeyboardShortcutsModal from '../KeyboardShortcutsHelpModal/KeyboardShortcutsHelpModal'
 
 type Props = {
   application: WebApplication
@@ -141,6 +142,11 @@ const ApplicationView: FunctionComponent<Props> = ({ application, mainApplicatio
             })
             .catch(console.error)
         }
+      } else if (eventName === ApplicationEvent.SyncTooManyRequests) {
+        addToast({
+          type: ToastType.Error,
+          message: 'Too many requests. Please try again later.',
+        })
       }
     })
 
@@ -163,7 +169,7 @@ const ApplicationView: FunctionComponent<Props> = ({ application, mainApplicatio
 
   useEffect(() => {
     const removeObserver = application.addWebEventObserver(async (eventName) => {
-      if (eventName === WebAppEvent.WindowDidFocus) {
+      if (eventName === WebAppEvent.WindowDidFocus || eventName === WebAppEvent.WindowDidBlur) {
         if (!(await application.protections.isLocked())) {
           application.sync.sync().catch(console.error)
         }
@@ -262,6 +268,7 @@ const ApplicationView: FunctionComponent<Props> = ({ application, mainApplicatio
                     <EditorWidthSelectionModalWrapper />
                     <ConfirmDeleteAccountContainer application={application} />
                     <ImportModal importModalController={application.importModalController} />
+                    <KeyboardShortcutsModal keyboardService={application.keyboardService} />
                   </>
                   {application.routeService.isDotOrg && <DotOrgNotice />}
                   {isIOS() && <IosKeyboardClose />}
