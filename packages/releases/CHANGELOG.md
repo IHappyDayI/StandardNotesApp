@@ -3,6 +3,78 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.4.713](https://github.com/standardnotes/app/compare/@standardnotes/releases@1.4.712...@standardnotes/releases@1.4.713) (2024-02-22)
+
+**Note:** Version bump only for package @standardnotes/releases
+
+## [1.4.712](https://github.com/standardnotes/app/compare/@standardnotes/releases@1.4.711...@standardnotes/releases@1.4.712) (2024-02-21)
+
+**Note:** Version bump only for package @standardnotes/releases
+
+## [1.4.711](https://github.com/standardnotes/app/compare/@standardnotes/releases@1.4.710...@standardnotes/releases@1.4.711) (2024-02-20)
+
+**Note:** Version bump only for package @standardnotes/releases
+
+## [1.4.710](https://github.com/standardnotes/app/compare/@standardnotes/releases@1.4.709...@standardnotes/releases@1.4.710) (2024-02-19)
+
+**Note:** Version bump only for package @standardnotes/releases
+
+## [1.4.709](https://github.com/standardnotes/app/compare/@standardnotes/releases@1.4.708...@standardnotes/releases@1.4.709) (2024-02-18)
+
+**Note:** Version bump only for package @standardnotes/releases
+
+## [1.4.708](https://github.com/standardnotes/app/compare/@standardnotes/releases@1.4.707...@standardnotes/releases@1.4.708) (2024-02-18)
+
+**Note:** Version bump only for package @standardnotes/releases
+
+## [1.4.707](https://github.com/standardnotes/app/compare/@standardnotes/releases@1.4.706...@standardnotes/releases@1.4.707) (2024-02-17)
+
+**Note:** Version bump only for package @standardnotes/releases
+
+## [1.4.706](https://github.com/standardnotes/app/compare/@standardnotes/releases@1.4.705...@standardnotes/releases@1.4.706) (2024-02-17)
+
+**Note:** Version bump only for package @standardnotes/releases
+
+## [1.4.705](https://github.com/standardnotes/app/compare/@standardnotes/releases@1.4.704...@standardnotes/releases@1.4.705) (2024-02-15)
+
+**Note:** Version bump only for package @standardnotes/releases
+
+## [1.4.704](https://github.com/standardnotes/app/compare/@standardnotes/releases@1.4.703...@standardnotes/releases@1.4.704) (2024-02-08)
+
+**Note:** Version bump only for package @standardnotes/releases
+
+## [1.4.703](https://github.com/standardnotes/app/compare/@standardnotes/releases@1.4.702...@standardnotes/releases@1.4.703) (2024-02-07)
+
+**Note:** Version bump only for package @standardnotes/releases
+
+## [1.4.702](https://github.com/standardnotes/app/compare/@standardnotes/releases@1.4.701...@standardnotes/releases@1.4.702) (2024-02-07)
+
+**Note:** Version bump only for package @standardnotes/releases
+
+## [1.4.701](https://github.com/standardnotes/app/compare/@standardnotes/releases@1.4.700...@standardnotes/releases@1.4.701) (2024-02-05)
+
+**Note:** Version bump only for package @standardnotes/releases
+
+## [1.4.700](https://github.com/standardnotes/app/compare/@standardnotes/releases@1.4.699...@standardnotes/releases@1.4.700) (2024-02-03)
+
+**Note:** Version bump only for package @standardnotes/releases
+
+## [1.4.699](https://github.com/standardnotes/app/compare/@standardnotes/releases@1.4.698...@standardnotes/releases@1.4.699) (2024-02-02)
+
+**Note:** Version bump only for package @standardnotes/releases
+
+## [1.4.698](https://github.com/standardnotes/app/compare/@standardnotes/releases@1.4.697...@standardnotes/releases@1.4.698) (2024-02-02)
+
+**Note:** Version bump only for package @standardnotes/releases
+
+## [1.4.697](https://github.com/standardnotes/app/compare/@standardnotes/releases@1.4.696...@standardnotes/releases@1.4.697) (2024-01-31)
+
+**Note:** Version bump only for package @standardnotes/releases
+
+## [1.4.696](https://github.com/standardnotes/app/compare/@standardnotes/releases@1.4.695...@standardnotes/releases@1.4.696) (2024-01-30)
+
+**Note:** Version bump only for package @standardnotes/releases
+
 ## [1.4.695](https://github.com/standardnotes/app/compare/@standardnotes/releases@1.4.694...@standardnotes/releases@1.4.695) (2024-01-28)
 
 **Note:** Version bump only for package @standardnotes/releases

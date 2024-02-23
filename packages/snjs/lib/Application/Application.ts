@@ -81,6 +81,7 @@ import {
   CreateDecryptedBackupFile,
   CreateEncryptedBackupFile,
   WebSocketsService,
+  PreferencesServiceEvent,
 } from '@standardnotes/services'
 import {
   SNNote,
@@ -326,8 +327,12 @@ export class SNApplication implements ApplicationInterface, AppGroupManagedAppli
 
     const preferencesService = this.dependencies.get<PreferencesService>(TYPES.PreferencesService)
     this.serviceObservers.push(
-      preferencesService.addEventObserver(() => {
-        void this.notifyEvent(ApplicationEvent.PreferencesChanged)
+      preferencesService.addEventObserver((event) => {
+        if (event === PreferencesServiceEvent.PreferencesChanged) {
+          void this.notifyEvent(ApplicationEvent.PreferencesChanged)
+        } else if (event === PreferencesServiceEvent.LocalPreferencesChanged) {
+          void this.notifyEvent(ApplicationEvent.LocalPreferencesChanged)
+        }
       }),
     )
 
@@ -910,28 +915,6 @@ export class SNApplication implements ApplicationInterface, AppGroupManagedAppli
   public canAttemptDecryptionOfItem(item: EncryptedItemInterface): ClientDisplayableError | true {
     const service = this.dependencies.get<KeyRecoveryService>(TYPES.KeyRecoveryService)
     return service.canAttemptDecryptionOfItem(item)
-  }
-
-  public async isMfaActivated(): Promise<boolean> {
-    return this.mfa.isMfaActivated()
-  }
-
-  public async generateMfaSecret(): Promise<string> {
-    return this.mfa.generateMfaSecret()
-  }
-
-  public async getOtpToken(secret: string): Promise<string> {
-    return this.mfa.getOtpToken(secret)
-  }
-
-  public async enableMfa(secret: string, otpToken: string): Promise<void> {
-    return this.mfa.enableMfa(secret, otpToken)
-  }
-
-  public async disableMfa(): Promise<void> {
-    if (await this.protections.authorizeMfaDisable()) {
-      return this.mfa.disableMfa()
-    }
   }
 
   async isUsingHomeServer(): Promise<boolean> {

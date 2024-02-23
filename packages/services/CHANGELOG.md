@@ -3,6 +3,22 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.70.1](https://github.com/standardnotes/app/compare/@standardnotes/services@1.70.0...@standardnotes/services@1.70.1) (2024-02-22)
+
+**Note:** Version bump only for package @standardnotes/services
+
+# [1.70.0](https://github.com/standardnotes/app/compare/@standardnotes/services@1.69.0...@standardnotes/services@1.70.0) (2024-02-17)
+
+### Features
+
+* Themes and appeareance settings are now local to your device and not synced ([#2847](https://github.com/standardnotes/app/issues/2847)) ([bfbf9ab](https://github.com/standardnotes/app/commit/bfbf9ab8ceb6f1ecd3a0690bce3b5d1c5c52e84c))
+
+# [1.69.0](https://github.com/standardnotes/app/compare/@standardnotes/services@1.68.3...@standardnotes/services@1.69.0) (2024-02-02)
+
+### Features
+
+* Added search bar to navigation panel for searching tags and smart views ([#2815](https://github.com/standardnotes/app/issues/2815)) ([b07abaa](https://github.com/standardnotes/app/commit/b07abaa5df9ad580355f8179bab616002a33af33))
+
 ## [1.68.3](https://github.com/standardnotes/app/compare/@standardnotes/services@1.68.2...@standardnotes/services@1.68.3) (2024-01-27)
 
 **Note:** Version bump only for package @standardnotes/services

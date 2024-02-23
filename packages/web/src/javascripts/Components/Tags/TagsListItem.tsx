@@ -86,15 +86,33 @@ export const TagsListItem: FunctionComponent<Props> = observer(
       setTitle(tag.title || '')
     }, [setTitle, tag])
 
+    const setTagExpanded = useCallback(
+      (expanded: boolean) => {
+        if (!hasChildren) {
+          return
+        }
+        setShowChildren(expanded)
+        if (!navigationController.isSearching) {
+          navigationController.setExpanded(tag, expanded)
+        }
+      },
+      [hasChildren, navigationController, tag],
+    )
+
     const toggleChildren = useCallback(
       (e?: MouseEvent) => {
         e?.stopPropagation()
         const shouldShowChildren = !showChildren
-        setShowChildren(shouldShowChildren)
-        navigationController.setExpanded(tag, shouldShowChildren)
+        setTagExpanded(shouldShowChildren)
       },
-      [showChildren, tag, navigationController],
+      [showChildren, setTagExpanded],
     )
+
+    useEffect(() => {
+      if (!navigationController.isSearching) {
+        setShowChildren(tag.expanded)
+      }
+    }, [navigationController.isSearching, tag])
 
     const selectCurrentTag = useCallback(async () => {
       await navigationController.setSelectedTag(tag, type, {
@@ -269,11 +287,20 @@ export const TagsListItem: FunctionComponent<Props> = observer(
           role="button"
           tabIndex={FOCUSABLE_BUT_NOT_TABBABLE}
           className={classNames(
-            'tag group px-3.5 py-1 md:py-0',
+            'tag group px-3.5 py-0.5 focus-visible:!shadow-inner md:py-0',
             (isSelected || isContextMenuOpenForTag) && 'selected',
             isBeingDraggedOver && 'is-drag-over',
           )}
           onClick={selectCurrentTag}
+          onKeyDown={(event) => {
+            if (event.key === KeyboardKey.Enter || event.key === KeyboardKey.Space) {
+              selectCurrentTag().catch(console.error)
+            } else if (event.key === KeyboardKey.Left) {
+              setTagExpanded(false)
+            } else if (event.key === KeyboardKey.Right) {
+              setTagExpanded(true)
+            }
+          }}
           ref={tagRef}
           style={{
             paddingLeft: `${level * PADDING_PER_LEVEL_PX + PADDING_BASE_PX}px`,
@@ -282,7 +309,7 @@ export const TagsListItem: FunctionComponent<Props> = observer(
             e.preventDefault()
             onContextMenu(tag, type, e.clientX, e.clientY)
           }}
-          draggable={true}
+          draggable={!navigationController.isSearching}
           onDragStart={onDragStart}
           onDragEnter={onDragEnter}
           onDragExit={removeDragIndicator}
