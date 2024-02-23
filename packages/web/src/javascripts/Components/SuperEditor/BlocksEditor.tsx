@@ -32,7 +32,6 @@ import RemoteImagePlugin from './Plugins/RemoteImagePlugin/RemoteImagePlugin'
 import CodeOptionsPlugin from './Plugins/CodeOptionsPlugin/CodeOptions'
 import { SuperSearchContextProvider } from './Plugins/SearchPlugin/Context'
 import { SearchPlugin } from './Plugins/SearchPlugin/SearchPlugin'
-import AutoLinkPlugin from './Plugins/AutoLinkPlugin/AutoLinkPlugin'
 import DatetimePlugin from './Plugins/DateTimePlugin/DateTimePlugin'
 import PasswordPlugin from './Plugins/PasswordPlugin/PasswordPlugin'
 
@@ -139,7 +138,6 @@ export const BlocksEditor: FunctionComponent<BlocksEditorProps> = ({
       </SuperSearchContextProvider>
       <DatetimePlugin />
       <PasswordPlugin />
-      <AutoLinkPlugin />
       {!readonly && floatingAnchorElem && (
         <>
           <DraggableBlockPlugin anchorElem={floatingAnchorElem} />

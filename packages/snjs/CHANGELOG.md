@@ -3,6 +3,32 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.208.2](https://github.com/standardnotes/app/compare/@standardnotes/snjs@2.208.1...@standardnotes/snjs@2.208.2) (2024-02-22)
+
+**Note:** Version bump only for package @standardnotes/snjs
+
+## [2.208.1](https://github.com/standardnotes/app/compare/@standardnotes/snjs@2.208.0...@standardnotes/snjs@2.208.1) (2024-02-19)
+
+**Note:** Version bump only for package @standardnotes/snjs
+
+# [2.208.0](https://github.com/standardnotes/app/compare/@standardnotes/snjs@2.207.1...@standardnotes/snjs@2.208.0) (2024-02-17)
+
+### Features
+
+* Themes and appeareance settings are now local to your device and not synced ([#2847](https://github.com/standardnotes/app/issues/2847)) ([bfbf9ab](https://github.com/standardnotes/app/commit/bfbf9ab8ceb6f1ecd3a0690bce3b5d1c5c52e84c))
+
+## [2.207.1](https://github.com/standardnotes/app/compare/@standardnotes/snjs@2.207.0...@standardnotes/snjs@2.207.1) (2024-02-08)
+
+### Bug Fixes
+
+* Fixed an issue where signing into a self-hosted account would not correctly load subscription status ([77f692f](https://github.com/standardnotes/app/commit/77f692fe66b5e4b88cb8bbd2438717efe1590506))
+
+# [2.207.0](https://github.com/standardnotes/app/compare/@standardnotes/snjs@2.206.0...@standardnotes/snjs@2.207.0) (2024-02-02)
+
+### Features
+
+* Added search bar to navigation panel for searching tags and smart views ([#2815](https://github.com/standardnotes/app/issues/2815)) ([b07abaa](https://github.com/standardnotes/app/commit/b07abaa5df9ad580355f8179bab616002a33af33))
+
 # [2.206.0](https://github.com/standardnotes/app/compare/@standardnotes/snjs@2.205.2...@standardnotes/snjs@2.206.0) (2024-01-27)
 
 ### Features

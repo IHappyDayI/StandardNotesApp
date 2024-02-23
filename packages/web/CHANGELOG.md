@@ -3,6 +3,86 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [3.191.6](https://github.com/standardnotes/app/compare/@standardnotes/web@3.191.5...@standardnotes/web@3.191.6) (2024-02-22)
+
+**Note:** Version bump only for package @standardnotes/web
+
+## [3.191.5](https://github.com/standardnotes/app/compare/@standardnotes/web@3.191.4...@standardnotes/web@3.191.5) (2024-02-21)
+
+**Note:** Version bump only for package @standardnotes/web
+
+## [3.191.4](https://github.com/standardnotes/app/compare/@standardnotes/web@3.191.3...@standardnotes/web@3.191.4) (2024-02-20)
+
+**Note:** Version bump only for package @standardnotes/web
+
+## [3.191.3](https://github.com/standardnotes/app/compare/@standardnotes/web@3.191.2...@standardnotes/web@3.191.3) (2024-02-19)
+
+**Note:** Version bump only for package @standardnotes/web
+
+## [3.191.2](https://github.com/standardnotes/app/compare/@standardnotes/web@3.191.1...@standardnotes/web@3.191.2) (2024-02-18)
+
+**Note:** Version bump only for package @standardnotes/web
+
+## [3.191.1](https://github.com/standardnotes/app/compare/@standardnotes/web@3.191.0...@standardnotes/web@3.191.1) (2024-02-18)
+
+**Note:** Version bump only for package @standardnotes/web
+
+# [3.191.0](https://github.com/standardnotes/app/compare/@standardnotes/web@3.190.0...@standardnotes/web@3.191.0) (2024-02-17)
+
+### Features
+
+* Added "Find in note" option to note options/context menu for Super notes ([47745cb](https://github.com/standardnotes/app/commit/47745cb79c34239b58df61083e1af2c0d2ba1d16))
+
+# [3.190.0](https://github.com/standardnotes/app/compare/@standardnotes/web@3.189.5...@standardnotes/web@3.190.0) (2024-02-17)
+
+### Features
+
+* Themes and appeareance settings are now local to your device and not synced ([#2847](https://github.com/standardnotes/app/issues/2847)) ([bfbf9ab](https://github.com/standardnotes/app/commit/bfbf9ab8ceb6f1ecd3a0690bce3b5d1c5c52e84c))
+
+## [3.189.5](https://github.com/standardnotes/app/compare/@standardnotes/web@3.189.4...@standardnotes/web@3.189.5) (2024-02-15)
+
+**Note:** Version bump only for package @standardnotes/web
+
+## [3.189.4](https://github.com/standardnotes/app/compare/@standardnotes/web@3.189.3...@standardnotes/web@3.189.4) (2024-02-08)
+
+**Note:** Version bump only for package @standardnotes/web
+
+## [3.189.3](https://github.com/standardnotes/app/compare/@standardnotes/web@3.189.2...@standardnotes/web@3.189.3) (2024-02-07)
+
+**Note:** Version bump only for package @standardnotes/web
+
+## [3.189.2](https://github.com/standardnotes/app/compare/@standardnotes/web@3.189.1...@standardnotes/web@3.189.2) (2024-02-07)
+
+**Note:** Version bump only for package @standardnotes/web
+
+## [3.189.1](https://github.com/standardnotes/app/compare/@standardnotes/web@3.189.0...@standardnotes/web@3.189.1) (2024-02-05)
+
+**Note:** Version bump only for package @standardnotes/web
+
+# [3.189.0](https://github.com/standardnotes/app/compare/@standardnotes/web@3.188.1...@standardnotes/web@3.189.0) (2024-02-03)
+
+### Features
+
+* Improved keyboard navigation for tags and smart views. Tags can now be expanded/closed using left and right arrow keys. ([2d168a6](https://github.com/standardnotes/app/commit/2d168a68cf3f4b04adac0c7abec68a557613238b))
+
+## [3.188.1](https://github.com/standardnotes/app/compare/@standardnotes/web@3.188.0...@standardnotes/web@3.188.1) (2024-02-02)
+
+**Note:** Version bump only for package @standardnotes/web
+
+# [3.188.0](https://github.com/standardnotes/app/compare/@standardnotes/web@3.187.3...@standardnotes/web@3.188.0) (2024-02-02)
+
+### Features
+
+* Added search bar to navigation panel for searching tags and smart views ([#2815](https://github.com/standardnotes/app/issues/2815)) ([b07abaa](https://github.com/standardnotes/app/commit/b07abaa5df9ad580355f8179bab616002a33af33))
+
+## [3.187.3](https://github.com/standardnotes/app/compare/@standardnotes/web@3.187.2...@standardnotes/web@3.187.3) (2024-01-31)
+
+**Note:** Version bump only for package @standardnotes/web
+
+## [3.187.2](https://github.com/standardnotes/app/compare/@standardnotes/web@3.187.1...@standardnotes/web@3.187.2) (2024-01-30)
+
+**Note:** Version bump only for package @standardnotes/web
+
 ## [3.187.1](https://github.com/standardnotes/app/compare/@standardnotes/web@3.187.0...@standardnotes/web@3.187.1) (2024-01-28)
 
 ### Bug Fixes

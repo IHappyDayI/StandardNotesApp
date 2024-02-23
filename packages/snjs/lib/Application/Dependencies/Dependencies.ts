@@ -147,6 +147,8 @@ import {
   DesignateSurvivor,
   SyncBackoffService,
   SyncBackoffServiceInterface,
+  StorageServiceInterface,
+  ProtectionsClientInterface,
 } from '@standardnotes/services'
 import { ItemManager } from '../../Services/Items/ItemManager'
 import { PayloadManager } from '../../Services/Payloads/PayloadManager'
@@ -1228,6 +1230,7 @@ export class Dependencies {
         this.get<SettingsService>(TYPES.SettingsService),
         this.get<PureCryptoInterface>(TYPES.Crypto),
         this.get<FeaturesService>(TYPES.FeaturesService),
+        this.get<ProtectionsClientInterface>(TYPES.ProtectionService),
         this.get<InternalEventBus>(TYPES.InternalEventBus),
       )
     })
@@ -1282,6 +1285,7 @@ export class Dependencies {
         this.get<ItemManager>(TYPES.ItemManager),
         this.get<MutatorService>(TYPES.MutatorService),
         this.get<SyncService>(TYPES.SyncService),
+        this.get<StorageServiceInterface>(TYPES.DiskStorageService),
         this.get<InternalEventBus>(TYPES.InternalEventBus),
       )
     })
