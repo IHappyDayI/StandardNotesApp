@@ -24,6 +24,7 @@ type Props = {
   inlineFlex?: boolean
   className?: string
   readonly?: boolean
+  wrappable?: boolean
 }
 
 const LinkedItemBubble = ({
@@ -38,12 +39,13 @@ const LinkedItemBubble = ({
   inlineFlex,
   className,
   readonly,
+  wrappable,
 }: Props) => {
-  const ref = useRef<HTMLButtonElement>(null)
+  const ref = useRef<HTMLElement>()
   const application = useApplication()
 
   const [showUnlinkButton, setShowUnlinkButton] = useState(false)
-  const unlinkButtonRef = useRef<HTMLAnchorElement | null>(null)
+  const unlinkButtonRef = useRef<HTMLElement>()
 
   const [wasClicked, setWasClicked] = useState(false)
 
@@ -54,8 +56,10 @@ const LinkedItemBubble = ({
     setShowUnlinkButton(true)
   }
 
-  const onBlur = () => {
-    setShowUnlinkButton(false)
+  const onBlur: React.FocusEventHandler<HTMLButtonElement | HTMLAnchorElement> = (event) => {
+    if (!event.currentTarget.contains(event.relatedTarget)) {
+      setShowUnlinkButton(false)
+    }
     setWasClicked(false)
   }
 
@@ -101,11 +105,51 @@ const LinkedItemBubble = ({
     }
   }, [focusedId, link.id])
 
+  if (wrappable) {
+    return (
+      <a
+        ref={(el) => (ref.current = el as HTMLElement)}
+        tabIndex={0}
+        className={classNames(
+          'group inline-flex min-h-6 cursor-pointer items-center rounded align-middle',
+          'bg-passive-4-opacity-variant outline-1 outline-info hover:bg-contrast focus:bg-contrast focus:outline',
+          'text-left text-sm text-text hover:no-underline focus:no-underline lg:text-xs',
+          'py-1 pl-1 pr-2',
+          className,
+        )}
+        onFocus={handleFocus}
+        onBlur={onBlur}
+        onClick={onClick}
+        title={tagTitle ? tagTitle.longTitle : link.item.title}
+        onKeyDown={onKeyDown}
+      >
+        <Icon type={icon} className={classNames('mr-1 flex-shrink-0', iconClassName)} size="small" />
+        <span className="whitespace-pre-wrap">
+          {tagTitle && <span className="text-passive-1">{tagTitle.titlePrefix}</span>}
+          {link.type === 'linked-by' && link.item.content_type !== ContentType.TYPES.Tag && (
+            <span className={!isBidirectional ? 'hidden group-focus:inline' : ''}>Linked By:</span>
+          )}
+          {getItemTitleInContextOfLinkBubble(link.item)}
+        </span>
+        {showUnlinkButton && !readonly && (
+          <button
+            ref={(el) => (unlinkButtonRef.current = el as HTMLElement)}
+            role="button"
+            className="-mr-1 ml-2 inline-flex cursor-pointer border-0 bg-transparent p-0"
+            onClick={onUnlinkClick}
+          >
+            <Icon type="close" className="text-neutral hover:text-info" size="small" />
+          </button>
+        )}
+      </a>
+    )
+  }
+
   return (
     <button
-      ref={ref}
+      ref={(el) => (ref.current = el as HTMLElement)}
       className={classNames(
-        'group h-6 cursor-pointer items-center rounded bg-passive-4-opacity-variant py-2 pl-1 pr-2 text-sm',
+        'group h-6 cursor-pointer items-center rounded bg-passive-4-opacity-variant py-2 pl-1 pr-2 align-middle text-sm',
         'text-text hover:bg-contrast focus:bg-contrast lg:text-xs',
         inlineFlex ? 'inline-flex' : 'flex',
         className,
@@ -128,7 +172,7 @@ const LinkedItemBubble = ({
       </span>
       {showUnlinkButton && !readonly && (
         <a
-          ref={unlinkButtonRef}
+          ref={(el) => (unlinkButtonRef.current = el as HTMLElement)}
           role="button"
           className="-mr-1 ml-2 flex cursor-pointer border-0 bg-transparent p-0"
           onClick={onUnlinkClick}

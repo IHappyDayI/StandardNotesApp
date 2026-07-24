@@ -3,6 +3,64 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.58.4](https://github.com/standardnotes/app/compare/@standardnotes/models@1.58.3...@standardnotes/models@1.58.4) (2026-07-18)
+
+### Bug Fixes
+
+* Fix keyboard shortcut handling from within iframe editors ([#3025](https://github.com/standardnotes/app/issues/3025)) ([ee56c85](https://github.com/standardnotes/app/commit/ee56c858ab2c0d7d5a158e29c070b4bf55c1bd8b))
+
+## [1.58.3](https://github.com/standardnotes/app/compare/@standardnotes/models@1.58.2...@standardnotes/models@1.58.3) (2026-04-24)
+
+**Note:** Version bump only for package @standardnotes/models
+
+## [1.58.2](https://github.com/standardnotes/app/compare/@standardnotes/models@1.58.1...@standardnotes/models@1.58.2) (2025-11-06)
+
+**Note:** Version bump only for package @standardnotes/models
+
+## [1.58.1](https://github.com/standardnotes/app/compare/@standardnotes/models@1.58.0...@standardnotes/models@1.58.1) (2025-07-15)
+
+### Bug Fixes
+
+* Prevent setting negative item created_at_timestamp values ([#2913](https://github.com/standardnotes/app/issues/2913)) ([2459e06](https://github.com/standardnotes/app/commit/2459e06b19f54a5a35b6dde11f361dc5c60ab7f5))
+
+# [1.58.0](https://github.com/standardnotes/app/compare/@standardnotes/models@1.57.1...@standardnotes/models@1.58.0) (2025-06-24)
+
+### Features
+
+* Tag search will now only show the direct tag results instead of also showing the parent and siblings ([#2906](https://github.com/standardnotes/app/issues/2906)) ([caa8eff](https://github.com/standardnotes/app/commit/caa8eff216b2d7a47f849f85f1eb2248eea10c62))
+
+## [1.57.1](https://github.com/standardnotes/app/compare/@standardnotes/models@1.57.0...@standardnotes/models@1.57.1) (2025-06-18)
+
+**Note:** Version bump only for package @standardnotes/models
+
+# [1.57.0](https://github.com/standardnotes/app/compare/@standardnotes/models@1.56.1...@standardnotes/models@1.57.0) (2025-06-16)
+
+### Features
+
+* Added image alignment options and preference in Super notes ([#2903](https://github.com/standardnotes/app/issues/2903)) ([7bce025](https://github.com/standardnotes/app/commit/7bce025efbab6d57c4dabb8354d400c87eb90032))
+
+## [1.56.1](https://github.com/standardnotes/app/compare/@standardnotes/models@1.56.0...@standardnotes/models@1.56.1) (2024-05-07)
+
+**Note:** Version bump only for package @standardnotes/models
+
+# [1.56.0](https://github.com/standardnotes/app/compare/@standardnotes/models@1.55.3...@standardnotes/models@1.56.0) (2024-04-24)
+
+### Features
+
+* Switched editor appearance preferences to be local instead of synced ([#2870](https://github.com/standardnotes/app/issues/2870)) ([594a606](https://github.com/standardnotes/app/commit/594a6061b2af619c5f585d6327fd4c3f20dac740))
+
+## [1.55.3](https://github.com/standardnotes/app/compare/@standardnotes/models@1.55.2...@standardnotes/models@1.55.3) (2024-04-10)
+
+**Note:** Version bump only for package @standardnotes/models
+
+## [1.55.2](https://github.com/standardnotes/app/compare/@standardnotes/models@1.55.1...@standardnotes/models@1.55.2) (2024-04-10)
+
+**Note:** Version bump only for package @standardnotes/models
+
+## [1.55.1](https://github.com/standardnotes/app/compare/@standardnotes/models@1.55.0...@standardnotes/models@1.55.1) (2024-04-08)
+
+**Note:** Version bump only for package @standardnotes/models
+
 # [1.55.0](https://github.com/standardnotes/app/compare/@standardnotes/models@1.54.0...@standardnotes/models@1.55.0) (2024-02-17)
 
 ### Features

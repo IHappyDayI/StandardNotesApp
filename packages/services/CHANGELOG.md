@@ -3,6 +3,134 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.72.4](https://github.com/standardnotes/app/compare/@standardnotes/services@1.72.3...@standardnotes/services@1.72.4) (2026-07-18)
+
+**Note:** Version bump only for package @standardnotes/services
+
+## [1.72.3](https://github.com/standardnotes/app/compare/@standardnotes/services@1.72.2...@standardnotes/services@1.72.3) (2026-04-24)
+
+**Note:** Version bump only for package @standardnotes/services
+
+## [1.72.2](https://github.com/standardnotes/app/compare/@standardnotes/services@1.72.1...@standardnotes/services@1.72.2) (2025-12-18)
+
+### Bug Fixes
+
+* Shows informative error on UI when file upload limit is reached ([#2961](https://github.com/standardnotes/app/issues/2961)) ([844b7a7](https://github.com/standardnotes/app/commit/844b7a7a2b26bd4e74c2d8d36ddfa9e28b47f589))
+
+## [1.72.1](https://github.com/standardnotes/app/compare/@standardnotes/services@1.72.0...@standardnotes/services@1.72.1) (2025-11-06)
+
+### Bug Fixes
+
+* Fix native themes not working on external editors ([#2957](https://github.com/standardnotes/app/issues/2957)) [skip e2e] ([60e92c7](https://github.com/standardnotes/app/commit/60e92c7035a54fd60e88034ca5ee120ae23e7c1d))
+
+# [1.72.0](https://github.com/standardnotes/app/compare/@standardnotes/services@1.71.11...@standardnotes/services@1.72.0) (2025-09-25)
+
+### Features
+
+* Added command palette for quick actions and switching between items ([#2933](https://github.com/standardnotes/app/issues/2933)) [skip e2e] ([efba7c6](https://github.com/standardnotes/app/commit/efba7c682d81d518d02ea52aea8c022f190679eb))
+
+## [1.71.11](https://github.com/standardnotes/app/compare/@standardnotes/services@1.71.10...@standardnotes/services@1.71.11) (2025-09-12)
+
+**Note:** Version bump only for package @standardnotes/services
+
+## [1.71.10](https://github.com/standardnotes/app/compare/@standardnotes/services@1.71.9...@standardnotes/services@1.71.10) (2025-08-26)
+
+**Note:** Version bump only for package @standardnotes/services
+
+## [1.71.9](https://github.com/standardnotes/app/compare/@standardnotes/services@1.71.8...@standardnotes/services@1.71.9) (2025-07-15)
+
+**Note:** Version bump only for package @standardnotes/services
+
+## [1.71.8](https://github.com/standardnotes/app/compare/@standardnotes/services@1.71.7...@standardnotes/services@1.71.8) (2025-06-24)
+
+**Note:** Version bump only for package @standardnotes/services
+
+## [1.71.7](https://github.com/standardnotes/app/compare/@standardnotes/services@1.71.6...@standardnotes/services@1.71.7) (2025-06-18)
+
+**Note:** Version bump only for package @standardnotes/services
+
+## [1.71.6](https://github.com/standardnotes/app/compare/@standardnotes/services@1.71.5...@standardnotes/services@1.71.6) (2025-06-16)
+
+**Note:** Version bump only for package @standardnotes/services
+
+## [1.71.5](https://github.com/standardnotes/app/compare/@standardnotes/services@1.71.4...@standardnotes/services@1.71.5) (2025-05-02)
+
+### Bug Fixes
+
+* Fixed issue with keyboard on Android covering content ([#2899](https://github.com/standardnotes/app/issues/2899)) ([c4e0138](https://github.com/standardnotes/app/commit/c4e0138ce3ef9bc0adb75dae08aec2203473552d))
+
+## [1.71.4](https://github.com/standardnotes/app/compare/@standardnotes/services@1.71.3...@standardnotes/services@1.71.4) (2024-11-22)
+
+### Bug Fixes
+
+* Pane visibility settings will be persisted locally ([#2888](https://github.com/standardnotes/app/issues/2888)) ([f179631](https://github.com/standardnotes/app/commit/f1796312deccf78f58a46af900e9f37f2c751aba))
+
+## [1.71.3](https://github.com/standardnotes/app/compare/@standardnotes/services@1.71.2...@standardnotes/services@1.71.3) (2024-09-20)
+
+### Bug Fixes
+
+* trim/lowercase email on email change ([#2886](https://github.com/standardnotes/app/issues/2886)) ([98304cc](https://github.com/standardnotes/app/commit/98304cc57df59f3d18061f97427f811f336b268f))
+
+## [1.71.2](https://github.com/standardnotes/app/compare/@standardnotes/services@1.71.1...@standardnotes/services@1.71.2) (2024-05-07)
+
+**Note:** Version bump only for package @standardnotes/services
+
+## [1.71.1](https://github.com/standardnotes/app/compare/@standardnotes/services@1.71.0...@standardnotes/services@1.71.1) (2024-05-06)
+
+**Note:** Version bump only for package @standardnotes/services
+
+# [1.71.0](https://github.com/standardnotes/app/compare/@standardnotes/services@1.70.11...@standardnotes/services@1.71.0) (2024-04-24)
+
+### Features
+
+* Switched editor appearance preferences to be local instead of synced ([#2870](https://github.com/standardnotes/app/issues/2870)) ([594a606](https://github.com/standardnotes/app/commit/594a6061b2af619c5f585d6327fd4c3f20dac740))
+
+## [1.70.11](https://github.com/standardnotes/app/compare/@standardnotes/services@1.70.10...@standardnotes/services@1.70.11) (2024-04-20)
+
+**Note:** Version bump only for package @standardnotes/services
+
+## [1.70.10](https://github.com/standardnotes/app/compare/@standardnotes/services@1.70.9...@standardnotes/services@1.70.10) (2024-04-19)
+
+**Note:** Version bump only for package @standardnotes/services
+
+## [1.70.9](https://github.com/standardnotes/app/compare/@standardnotes/services@1.70.8...@standardnotes/services@1.70.9) (2024-04-13)
+
+### Bug Fixes
+
+* Fixes an issue where importing an encrypted backup file may not successfully complete in some cases ([7f1baf5](https://github.com/standardnotes/app/commit/7f1baf52c1d2ddd5112438b936d22ad99bc403a5))
+
+## [1.70.8](https://github.com/standardnotes/app/compare/@standardnotes/services@1.70.7...@standardnotes/services@1.70.8) (2024-04-10)
+
+**Note:** Version bump only for package @standardnotes/services
+
+## [1.70.7](https://github.com/standardnotes/app/compare/@standardnotes/services@1.70.6...@standardnotes/services@1.70.7) (2024-04-10)
+
+**Note:** Version bump only for package @standardnotes/services
+
+## [1.70.6](https://github.com/standardnotes/app/compare/@standardnotes/services@1.70.5...@standardnotes/services@1.70.6) (2024-04-08)
+
+**Note:** Version bump only for package @standardnotes/services
+
+## [1.70.5](https://github.com/standardnotes/app/compare/@standardnotes/services@1.70.4...@standardnotes/services@1.70.5) (2024-03-22)
+
+### Bug Fixes
+
+* Fixed issue with system color scheme not being applied correctly on start ([7967dde](https://github.com/standardnotes/app/commit/7967ddead790d89478554cd6a96429fd06958590))
+
+## [1.70.4](https://github.com/standardnotes/app/compare/@standardnotes/services@1.70.3...@standardnotes/services@1.70.4) (2024-03-14)
+
+**Note:** Version bump only for package @standardnotes/services
+
+## [1.70.3](https://github.com/standardnotes/app/compare/@standardnotes/services@1.70.2...@standardnotes/services@1.70.3) (2024-03-07)
+
+### Bug Fixes
+
+* use API v0 on iOS ([#2858](https://github.com/standardnotes/app/issues/2858)) [skip e2e] ([3b2f761](https://github.com/standardnotes/app/commit/3b2f76166126a5b11f35b64aacefa37618622c3d))
+
+## [1.70.2](https://github.com/standardnotes/app/compare/@standardnotes/services@1.70.1...@standardnotes/services@1.70.2) (2024-03-05)
+
+**Note:** Version bump only for package @standardnotes/services
+
 ## [1.70.1](https://github.com/standardnotes/app/compare/@standardnotes/services@1.70.0...@standardnotes/services@1.70.1) (2024-02-22)
 
 **Note:** Version bump only for package @standardnotes/services

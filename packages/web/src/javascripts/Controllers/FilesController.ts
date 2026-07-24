@@ -11,18 +11,12 @@ import {
   ArchiveManager,
   confirmDialog,
   IsNativeMobileWeb,
-  parseAndCreateZippableFileName,
   VaultDisplayServiceInterface,
 } from '@standardnotes/ui-services'
 import { Strings, StringUtils } from '@/Constants/Strings'
 import { concatenateUint8Arrays } from '@/Utils/ConcatenateUint8Arrays'
-import {
-  ClassicFileReader,
-  StreamingFileReader,
-  StreamingFileSaver,
-  ClassicFileSaver,
-  parseFileName,
-} from '@standardnotes/filepicker'
+import { ClassicFileReader, StreamingFileReader, StreamingFileSaver, ClassicFileSaver } from '@standardnotes/filepicker'
+import { parseAndCreateZippableFileName, parseFileName } from '@standardnotes/utils'
 import {
   AlertService,
   ChallengeReason,
@@ -38,6 +32,7 @@ import {
   ProtectionsClientInterface,
   SNNote,
   SyncServiceInterface,
+  UuidGenerator,
   VaultServiceInterface,
 } from '@standardnotes/snjs'
 import { addToast, dismissToast, ToastType, updateToast } from '@standardnotes/toast'
@@ -46,20 +41,29 @@ import { AbstractViewController } from './Abstract/AbstractViewController'
 import { NotesController } from './NotesController/NotesController'
 import { downloadOrShareBlobBasedOnPlatform } from '@/Utils/DownloadOrShareBasedOnPlatform'
 import { truncateString } from '@/Components/SuperEditor/Utils'
+import { RecentActionsState } from '../Application/Recents'
 
 const UnprotectedFileActions = [FileItemActionType.ToggleFileProtection]
 const NonMutatingFileActions = [FileItemActionType.DownloadFile, FileItemActionType.PreviewFile]
 
 type FileContextMenuLocation = { x: number; y: number }
 
-export type FilesControllerEventData = {
-  [FilesControllerEvent.FileUploadedToNote]: {
-    uuid: string
-  }
+export enum FilesControllerEvent {
+  FileUploadedToNote = 'FileUploadedToNote',
+  FileUploadFinished = 'FileUploadFinished',
+  UploadAndInsertFile = 'UploadAndInsertFile',
 }
 
-export enum FilesControllerEvent {
-  FileUploadedToNote,
+export type FilesControllerEventData = {
+  [FilesControllerEvent.FileUploadedToNote]?: {
+    uuid: string
+  }
+  [FilesControllerEvent.FileUploadFinished]?: {
+    uploadedFile: FileItem
+  }
+  [FilesControllerEvent.UploadAndInsertFile]?: {
+    fileOrHandle: File | FileSystemFileHandle
+  }
 }
 
 export class FilesController extends AbstractViewController<FilesControllerEvent, FilesControllerEventData> {
@@ -72,6 +76,14 @@ export class FilesController extends AbstractViewController<FilesControllerEvent
   shouldUseStreamingAPI = StreamingFileSaver.available()
   reader = this.shouldUseStreamingAPI ? StreamingFileReader : ClassicFileReader
   maxFileSize = this.reader.maximumFileSize()
+
+  uploadProgressMap: Map<
+    string,
+    {
+      file: File
+      progress: number
+    }
+  > = new Map()
 
   override deinit(): void {
     super.deinit()
@@ -94,6 +106,7 @@ export class FilesController extends AbstractViewController<FilesControllerEvent
     private platform: Platform,
     private mobileDevice: MobileDeviceInterface | undefined,
     private _isNativeMobileWeb: IsNativeMobileWeb,
+    private recents: RecentActionsState,
     eventBus: InternalEventBusInterface,
   ) {
     super(eventBus)
@@ -111,6 +124,8 @@ export class FilesController extends AbstractViewController<FilesControllerEvent
       setShowFileContextMenu: action,
       setShowProtectedOverlay: action,
       setFileContextMenuLocation: action,
+
+      uploadProgressMap: observable,
     })
 
     this.disposers.push(
@@ -155,7 +170,7 @@ export class FilesController extends AbstractViewController<FilesControllerEvent
 
   deleteFile = async (file: FileItem) => {
     const shouldDelete = await confirmDialog({
-      text: `Are you sure you want to permanently delete "${file.name}"?`,
+      text: StringUtils.deleteFile(file.name),
       confirmButtonStyle: 'danger',
     })
     if (shouldDelete) {
@@ -265,6 +280,7 @@ export class FilesController extends AbstractViewController<FilesControllerEvent
         break
       case FileItemActionType.PreviewFile:
         this.filePreviewModalController.activate(file, action.payload.otherFiles)
+        this.recents.add(file.uuid)
         break
     }
 
@@ -300,15 +316,18 @@ export class FilesController extends AbstractViewController<FilesControllerEvent
     }
 
     try {
-      const saver = this.shouldUseStreamingAPI ? new StreamingFileSaver(file.name) : new ClassicFileSaver()
+      let saver = this.shouldUseStreamingAPI ? new StreamingFileSaver(file.name) : new ClassicFileSaver()
+      let didSelectFileToStreamTo = false
 
-      const isUsingStreamingSaver = saver instanceof StreamingFileSaver
-
-      if (isUsingStreamingSaver) {
+      if (isUsingStreamingSaver(saver)) {
         const fileHandle = directoryHandle
           ? await directoryHandle.getFileHandle(file.name, { create: true })
           : undefined
-        await saver.selectFileToSaveTo(fileHandle)
+        didSelectFileToStreamTo = await saver.selectFileToSaveTo(fileHandle)
+      }
+
+      if (isUsingStreamingSaver(saver) && !didSelectFileToStreamTo) {
+        saver = new ClassicFileSaver()
       }
 
       if (this.mobileDevice && canShowProgressNotification) {
@@ -332,7 +351,7 @@ export class FilesController extends AbstractViewController<FilesControllerEvent
       let lastProgress: FileDownloadProgress | undefined
 
       const result = await this.files.downloadFile(file, async (decryptedBytes, progress) => {
-        if (isUsingStreamingSaver) {
+        if (isUsingStreamingSaver(saver)) {
           await saver.pushBytes(decryptedBytes)
         } else {
           decryptedBytesArray.push(decryptedBytes)
@@ -365,7 +384,7 @@ export class FilesController extends AbstractViewController<FilesControllerEvent
         throw new Error(result.text)
       }
 
-      if (isUsingStreamingSaver) {
+      if (isUsingStreamingSaver(saver)) {
         await saver.finish()
       } else {
         const finalBytes = concatenateUint8Arrays(decryptedBytesArray)
@@ -424,7 +443,7 @@ export class FilesController extends AbstractViewController<FilesControllerEvent
           `This file exceeds the limits supported in this browser. To upload files greater than ${
             this.maxFileSize / BYTES_IN_ONE_MEGABYTE
           }MB, please use the desktop application or the Chrome browser.`,
-          `Cannot upload file "${file.name}"`,
+          StringUtils.cannotUploadFile(file.name),
         )
         .catch(console.error)
       return true
@@ -453,9 +472,11 @@ export class FilesController extends AbstractViewController<FilesControllerEvent
     options: {
       showToast?: boolean
       note?: SNNote
+      onUploadStart?: (fileUuid: string) => void
+      onUploadFinish?: () => void
     } = {},
   ): Promise<FileItem | undefined> {
-    const { showToast = true, note } = options
+    const { showToast = true, note, onUploadStart, onUploadFinish } = options
 
     let toastId: string | undefined
     let canShowProgressNotification = false
@@ -482,6 +503,17 @@ export class FilesController extends AbstractViewController<FilesControllerEvent
         return
       }
 
+      const uuid = UuidGenerator.GenerateUuid()
+
+      this.uploadProgressMap.set(uuid, {
+        file: fileToUpload,
+        progress: 0,
+      })
+
+      if (onUploadStart) {
+        onUploadStart(uuid)
+      }
+
       const vaultForNote = note ? this.vaults.getItemVault(note) : undefined
 
       const operation = await this.files.beginNewFileUpload(
@@ -492,12 +524,17 @@ export class FilesController extends AbstractViewController<FilesControllerEvent
       if (operation instanceof ClientDisplayableError) {
         addToast({
           type: ToastType.Error,
-          message: 'Unable to start upload session',
+          message: operation.text,
         })
-        throw new Error('Unable to start upload session')
+        return undefined
       }
 
       const initialProgress = operation.getProgress().percentComplete
+
+      this.uploadProgressMap.set(uuid, {
+        file: fileToUpload,
+        progress: initialProgress,
+      })
 
       if (showToast) {
         if (this.mobileDevice && canShowProgressNotification) {
@@ -521,6 +558,10 @@ export class FilesController extends AbstractViewController<FilesControllerEvent
         await this.files.pushBytesForUpload(operation, data, index, isLast)
 
         const percentComplete = Math.round(operation.getProgress().percentComplete)
+        this.uploadProgressMap.set(uuid, {
+          file: fileToUpload,
+          progress: percentComplete,
+        })
         if (toastId) {
           if (this.mobileDevice && canShowProgressNotification) {
             await this.mobileDevice.displayNotification({
@@ -547,15 +588,23 @@ export class FilesController extends AbstractViewController<FilesControllerEvent
         fileResult.mimeType = await this.archiveService.getMimeType(ext)
       }
 
-      const uploadedFile = await this.files.finishUpload(operation, fileResult)
+      const uploadedFile = await this.files.finishUpload(operation, fileResult, uuid)
 
       if (uploadedFile instanceof ClientDisplayableError) {
         addToast({
           type: ToastType.Error,
           message: uploadedFile.text,
         })
-        throw new Error(uploadedFile.text)
+        return undefined
       }
+
+      if (onUploadFinish) {
+        onUploadFinish()
+      }
+
+      this.notifyEvent(FilesControllerEvent.FileUploadFinished, {
+        [FilesControllerEvent.FileUploadFinished]: { uploadedFile },
+      })
 
       if (toastId) {
         if (this.mobileDevice && canShowProgressNotification) {
@@ -635,8 +684,14 @@ export class FilesController extends AbstractViewController<FilesControllerEvent
     })
   }
 
+  uploadAndInsertFileToCurrentNote(fileOrHandle: File | FileSystemFileHandle) {
+    this.notifyEvent(FilesControllerEvent.UploadAndInsertFile, {
+      [FilesControllerEvent.UploadAndInsertFile]: { fileOrHandle },
+    })
+  }
+
   deleteFilesPermanently = async (files: FileItem[]) => {
-    const title = Strings.trashItemsTitle
+    const title = Strings.deleteItemsPermanentlyTitle
     const text = files.length === 1 ? StringUtils.deleteFile(files[0].name) : Strings.deleteMultipleFiles
 
     if (
@@ -800,4 +855,8 @@ export class FilesController extends AbstractViewController<FilesControllerEvent
       message: `Successfully downloaded ${files.length} files as archive`,
     })
   }
+}
+
+function isUsingStreamingSaver(saver: StreamingFileSaver | ClassicFileSaver): saver is StreamingFileSaver {
+  return saver instanceof StreamingFileSaver
 }

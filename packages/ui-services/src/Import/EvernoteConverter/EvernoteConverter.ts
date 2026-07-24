@@ -7,6 +7,11 @@ import MD5 from 'crypto-js/md5'
 import Base64 from 'crypto-js/enc-base64'
 import { Converter, UploadFileFn } from '../Converter'
 import { ConversionResult } from '../ConversionResult'
+import { getBlobFromBase64 } from '../Utils'
+import { isHighlightSpanElement } from '../HighlightSpanImport'
+
+const EVERNOTE_TODO = /--en-todo\s*:\s*true/i
+const EVERNOTE_CHECKED = /--en-checked\s*:\s*true/i
 dayjs.extend(customParseFormat)
 dayjs.extend(utc)
 
@@ -75,33 +80,25 @@ export class EvernoteConverter implements Converter {
           .filter(Boolean) as EvernoteResource[]
 
         const contentNode = xmlNote.getElementsByTagName('content')[0]
-        const contentXmlString = this.getXmlStringFromContentElement(contentNode)
+        let contentXmlString = this.getXmlStringFromContentElement(contentNode)
         if (!contentXmlString) {
           continue
         }
-        const contentXml = this.loadXMLString(contentXmlString, 'html')
+        // Convert any en-media self-closing tags to normal closing tags
+        contentXmlString = contentXmlString.replace(/<((en-media)[^<>]+)\/>/g, '<$1></$2>')
+        const content = this.loadXMLString(contentXmlString, 'html')
 
-        const noteElement = contentXml.getElementsByTagName('en-note')[0] as HTMLElement
-
-        const unorderedLists = Array.from(noteElement.getElementsByTagName('ul'))
+        const noteElement = content.getElementsByTagName('en-note')[0] as HTMLElement
 
         if (canUseSuper) {
           this.convertTopLevelDivsToParagraphs(noteElement)
-          this.convertListsToSuperFormatIfApplicable(unorderedLists)
           this.convertLeftPaddingToSuperIndent(noteElement)
+          this.convertHighlightSpansToMarks(noteElement)
         }
 
+        this.convertEvernoteChecklists(noteElement, canUseSuper)
         this.removeEmptyAndOrphanListElements(noteElement)
-        this.removeUnnecessaryTopLevelBreaks(noteElement)
-
-        const mediaElements = Array.from(noteElement.getElementsByTagName('en-media'))
-        const { uploadedFiles } = await this.replaceMediaElementsWithResources(
-          mediaElements,
-          resources,
-          canUploadFiles,
-          uploadFile,
-        )
-        filesToPotentiallyCleanup.push(...uploadedFiles)
+        this.unwrapTopLevelBreaks(noteElement)
 
         // Some notes have <font> tags that contain separate <span> tags with text
         // which causes broken paragraphs in the note.
@@ -113,13 +110,26 @@ export class EvernoteConverter implements Converter {
           fontElement.innerText = fontElement.textContent || ''
         }
 
+        const mediaElements = Array.from(noteElement.getElementsByTagName('en-media'))
+        const { uploadedFiles } = await this.replaceMediaElementsWithResources(
+          mediaElements,
+          resources,
+          canUploadFiles,
+          uploadFile,
+        )
+        filesToPotentiallyCleanup.push(...uploadedFiles)
+
         let contentHTML = noteElement.innerHTML
         if (!canUseSuper) {
           contentHTML = contentHTML.replace(/<\/div>/g, '</div>\n')
           contentHTML = contentHTML.replace(/<li[^>]*>/g, '\n')
           contentHTML = contentHTML.trim()
         }
-        const text = !canUseSuper ? this.stripHTML(contentHTML) : convertHTMLToSuper(contentHTML)
+        const text = !canUseSuper
+          ? this.stripHTML(contentHTML)
+          : convertHTMLToSuper(contentHTML, {
+              addLineBreaks: false,
+            })
 
         const createdAtDate = created ? dayjs.utc(created, dateFormat).toDate() : new Date()
         const updatedAtDate = updated ? dayjs.utc(updated, dateFormat).toDate() : createdAtDate
@@ -235,27 +245,44 @@ export class EvernoteConverter implements Converter {
     } as EvernoteResource
   }
 
+  convertHighlightSpansToMarks(noteElement: HTMLElement) {
+    for (const span of Array.from(noteElement.querySelectorAll('span'))) {
+      if (!isHighlightSpanElement(span)) {
+        continue
+      }
+
+      const mark = document.createElement('mark')
+      const style = span.getAttribute('style')
+      if (style) {
+        mark.setAttribute('style', style)
+      }
+
+      while (span.firstChild) {
+        mark.appendChild(span.firstChild)
+      }
+
+      span.replaceWith(mark)
+    }
+  }
+
+  convertEvernoteChecklists(noteElement: HTMLElement, forSuper: boolean) {
+    for (const ul of Array.from(noteElement.getElementsByTagName('ul'))) {
+      if (isEvernoteTodoList(ul)) {
+        convertEvernoteTodoList(ul, forSuper)
+      }
+    }
+
+    for (const group of getEnTodoBlockGroups(noteElement)) {
+      convertEvernoteEnTodoGroup(group, forSuper)
+    }
+  }
+
   convertTopLevelDivsToParagraphs(noteElement: HTMLElement) {
     noteElement.querySelectorAll('div').forEach((div) => {
       if (div.parentElement === noteElement) {
         changeElementTag(div, 'p')
       }
     })
-  }
-
-  convertListsToSuperFormatIfApplicable(unorderedLists: HTMLUListElement[]) {
-    for (const unorderedList of unorderedLists) {
-      if (unorderedList.style.getPropertyValue('--en-todo') !== 'true') {
-        continue
-      }
-
-      unorderedList.setAttribute('__lexicallisttype', 'check')
-
-      const listItems = unorderedList.getElementsByTagName('li')
-      for (const listItem of Array.from(listItems)) {
-        listItem.setAttribute('aria-checked', listItem.style.getPropertyValue('--en-checked'))
-      }
-    }
   }
 
   convertLeftPaddingToSuperIndent(noteElement: HTMLElement) {
@@ -285,11 +312,13 @@ export class EvernoteConverter implements Converter {
     })
   }
 
-  removeUnnecessaryTopLevelBreaks(noteElement: HTMLElement) {
-    Array.from(noteElement.querySelectorAll('* > p > br')).forEach((br) => {
+  unwrapTopLevelBreaks(noteElement: HTMLElement) {
+    Array.from(noteElement.querySelectorAll('* > p > br, * > div > br')).forEach((br) => {
       const parent = br.parentElement!
-      if (parent.children.length === 1) {
-        parent.remove()
+      const children = Array.from(parent.children)
+      const isEveryChildBR = children.every((child) => child.tagName === 'BR')
+      if (isEveryChildBR) {
+        parent.replaceChildren()
       }
     })
   }
@@ -322,8 +351,7 @@ export class EvernoteConverter implements Converter {
   }
 
   async getFileFromResource(resource: EvernoteResource): Promise<File> {
-    const response = await fetch(resource.data)
-    const blob = await response.blob()
+    const blob = getBlobFromBase64(resource.data, resource.mimeType)
     return new File([blob], resource.fileName, { type: resource.mimeType })
   }
 
@@ -380,15 +408,155 @@ export class EvernoteConverter implements Converter {
   }
 
   stripHTML(html: string) {
-    const tmp = document.createElement('html')
-    tmp.innerHTML = html
-    return tmp.textContent || tmp.innerText || ''
+    const doc = new DOMParser().parseFromString(html, 'text/html')
+    return doc.body.textContent || ''
   }
 }
 
 function changeElementTag(element: HTMLElement, newTag: string) {
-  const attributes = Array.prototype.slice.call(element.attributes)
-  element.outerHTML = `<${newTag} ${attributes.map((attr) => attr.name + '="' + attr.value + '"').join(' ')}>${
-    element.innerHTML
-  }</${newTag}>`
+  const doc = element.ownerDocument
+  const parent = element.parentElement
+  if (!parent) {
+    return
+  }
+  const replacement = doc.createElement(newTag)
+  for (const attr of Array.from(element.attributes)) {
+    replacement.setAttribute(attr.name, attr.value)
+  }
+  while (element.firstChild) {
+    replacement.appendChild(element.firstChild)
+  }
+  parent.replaceChild(replacement, element)
+}
+
+function isEvernoteStyleTrue(element: HTMLElement, property: '--en-todo' | '--en-checked'): boolean {
+  const style = element.getAttribute('style') ?? ''
+  const matchesStyleAttribute = property === '--en-todo' ? EVERNOTE_TODO.test(style) : EVERNOTE_CHECKED.test(style)
+
+  return matchesStyleAttribute || element.style.getPropertyValue(property) === 'true'
+}
+
+function isEvernoteTodoList(element: HTMLUListElement): boolean {
+  return isEvernoteStyleTrue(element, '--en-todo')
+}
+
+function isEvernoteChecked(element: HTMLElement): boolean {
+  return isEvernoteStyleTrue(element, '--en-checked')
+}
+
+function formatPlaintextCheckbox(checked: boolean, text: string): string {
+  return `- ${checked ? '[x]' : '[ ]'} ${text}`
+}
+
+function moveEnTodoBlockContent(block: HTMLElement, target: HTMLElement) {
+  const clone = block.cloneNode(true) as HTMLElement
+  const enTodo = clone.querySelector('en-todo')
+
+  if (enTodo) {
+    while (enTodo.firstChild) {
+      target.appendChild(enTodo.firstChild)
+    }
+    enTodo.remove()
+  }
+
+  while (clone.lastChild?.nodeName === 'BR') {
+    clone.removeChild(clone.lastChild)
+  }
+
+  while (clone.firstChild) {
+    target.appendChild(clone.firstChild)
+  }
+}
+
+function getEnTodoBlockGroups(noteElement: HTMLElement): HTMLElement[][] {
+  const groups: HTMLElement[][] = []
+  let currentGroup: HTMLElement[] = []
+
+  for (const child of Array.from(noteElement.children)) {
+    if (!(child instanceof HTMLElement) || (child.tagName !== 'DIV' && child.tagName !== 'P')) {
+      if (currentGroup.length > 0) {
+        groups.push(currentGroup)
+        currentGroup = []
+      }
+      continue
+    }
+
+    if (child.querySelector('en-todo')) {
+      currentGroup.push(child)
+    } else if (currentGroup.length > 0) {
+      groups.push(currentGroup)
+      currentGroup = []
+    }
+  }
+
+  if (currentGroup.length > 0) {
+    groups.push(currentGroup)
+  }
+
+  return groups
+}
+
+function replaceBlockGroup(group: HTMLElement[], replacement: HTMLElement) {
+  group[0].replaceWith(replacement)
+  for (let index = 1; index < group.length; index++) {
+    group[index].remove()
+  }
+}
+
+function convertEvernoteTodoList(ul: HTMLUListElement, forSuper: boolean) {
+  if (forSuper) {
+    ul.setAttribute('__lexicallisttype', 'check')
+    for (const listItem of Array.from(ul.getElementsByTagName('li'))) {
+      listItem.setAttribute('aria-checked', isEvernoteChecked(listItem) ? 'true' : 'false')
+    }
+    return
+  }
+
+  const lines = Array.from(ul.getElementsByTagName('li')).map((listItem) =>
+    formatPlaintextCheckbox(isEvernoteChecked(listItem), listItem.textContent?.trim() ?? ''),
+  )
+  const replacement = document.createElement('div')
+  replacement.textContent = `${lines.join('\n')}\n`
+  ul.replaceWith(replacement)
+}
+
+function convertEvernoteEnTodoGroup(group: HTMLElement[], forSuper: boolean) {
+  if (forSuper) {
+    const ul = document.createElement('ul')
+    ul.setAttribute('__lexicallisttype', 'check')
+
+    for (const block of group) {
+      const enTodo = block.querySelector('en-todo')
+      if (!enTodo) {
+        continue
+      }
+
+      const listItem = document.createElement('li')
+      const checked = enTodo.getAttribute('checked')?.toLowerCase() === 'true'
+      listItem.setAttribute('aria-checked', checked ? 'true' : 'false')
+      moveEnTodoBlockContent(block, listItem)
+      ul.appendChild(listItem)
+    }
+
+    replaceBlockGroup(group, ul)
+    return
+  }
+
+  const lines: string[] = []
+
+  for (const block of group) {
+    const enTodo = block.querySelector('en-todo')
+    if (!enTodo) {
+      continue
+    }
+
+    const textContainer = document.createElement('div')
+    moveEnTodoBlockContent(block, textContainer)
+    const checked = enTodo.getAttribute('checked')?.toLowerCase() === 'true'
+    lines.push(formatPlaintextCheckbox(checked, textContainer.textContent?.trim() ?? ''))
+  }
+
+  const replacement = document.createElement('div')
+  replacement.textContent = `${lines.join('\n')}\n`
+  replaceBlockGroup(group, replacement)
 }

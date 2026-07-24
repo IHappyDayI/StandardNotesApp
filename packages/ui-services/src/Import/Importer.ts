@@ -1,4 +1,4 @@
-import { parseFileName } from '@standardnotes/filepicker'
+import { parseFileName } from '@standardnotes/utils'
 import {
   FeatureStatus,
   FeaturesClientInterface,
@@ -12,6 +12,7 @@ import { EvernoteConverter } from './EvernoteConverter/EvernoteConverter'
 import { GoogleKeepConverter } from './GoogleKeepConverter/GoogleKeepConverter'
 import { PlaintextConverter } from './PlaintextConverter/PlaintextConverter'
 import { SimplenoteConverter } from './SimplenoteConverter/SimplenoteConverter'
+import { assertImportFileWithinSizeLimit, MaxImportFileSizeBytes } from './ImportLimits'
 import { readFileAsText } from './Utils'
 import {
   DecryptedItemInterface,
@@ -27,7 +28,7 @@ import { HTMLConverter } from './HTMLConverter/HTMLConverter'
 import { SuperConverter } from './SuperConverter/SuperConverter'
 import { CleanupItemsFn, Converter, InsertNoteFn, InsertTagFn, LinkItemsFn, UploadFileFn } from './Converter'
 import { ConversionResult } from './ConversionResult'
-import { FilesClientInterface, SuperConverterServiceInterface } from '@standardnotes/files'
+import { FilesClientInterface, SuperConverterHTMLOptions, SuperConverterServiceInterface } from '@standardnotes/files'
 import { ContentType } from '@standardnotes/domain-core'
 
 const BytesInOneMegabyte = 1_000_000
@@ -74,6 +75,9 @@ export class Importer {
   }
 
   detectService = async (file: File): Promise<string | null> => {
+    if (file.size > MaxImportFileSizeBytes) {
+      return null
+    }
     const content = await readFileAsText(file)
 
     const { ext } = parseFileName(file.name)
@@ -207,12 +211,14 @@ export class Importer {
     )
   }
 
-  convertHTMLToSuper = (html: string): string => {
+  convertHTMLToSuper = (html: string, options?: SuperConverterHTMLOptions): string => {
     if (!this.canUseSuper()) {
       return html
     }
 
-    return this.superConverterService.convertOtherFormatToSuperString(html, 'html')
+    return this.superConverterService.convertOtherFormatToSuperString(html, 'html', {
+      html: options,
+    })
   }
 
   convertMarkdownToSuper = (markdown: string): string => {
@@ -229,6 +235,8 @@ export class Importer {
     if (type === 'super' && !canUseSuper) {
       throw new Error('Importing Super notes requires a subscription')
     }
+
+    assertImportFileWithinSizeLimit(file)
 
     const successful: ConversionResult['successful'] = []
     const errored: ConversionResult['errored'] = []

@@ -21,7 +21,7 @@ Standard Notes is an end-to-end encrypted note-taking app for digitalists and pr
 	- [Mac](https://standardnotes.com/download)
 	- [Windows](https://standardnotes.com/download)
 	- [Linux](https://standardnotes.com/download)
-	- [iOS](https://standardnotes.com/download/https://itunes.apple.com/us/app/standard-notes/id1285392450?mt=8)
+	- [iOS](https://itunes.apple.com/us/app/standard-notes/id1285392450?mt=8)
 	- [Android](https://play.google.com/store/apps/details?id=com.standardnotes)
 4. You're all set. Standard Notes comes out of the box with end-to-end encrypted sync on all your devices.
 
@@ -49,11 +49,12 @@ Questions? Find answers on our [Help page](https://standardnotes.com/help).
 
 Our web app is compiled into a folder of static HTML, JS, and CSS files. You can serve these files behind a web server to get started:
 
-1. Clone the repo
-2. `cd packages/web`
-3. `yarn build`
-4. `cd dist`
-5. You can then use Python to serve this folder over http: `python -m http.server 8080`
+1. `git clone https://github.com/standardnotes/app.git`
+2. `cd app`
+3. `yarn install`
+4. `yarn build:web`
+5. `cd packages/web`
+6. You can then use Python to serve this folder over http: `python -m http.server 8080`
 
 You can now access the app at `http://localhost:8080`.
 

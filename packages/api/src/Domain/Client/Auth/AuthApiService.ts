@@ -15,11 +15,16 @@ import { AuthApiServiceInterface } from './AuthApiServiceInterface'
 export class AuthApiService implements AuthApiServiceInterface {
   private operationsInProgress: Map<AuthApiOperations, boolean>
 
-  constructor(private authServer: AuthServerInterface) {
+  constructor(
+    private authServer: AuthServerInterface,
+    private apiVersion: ApiVersion,
+  ) {
     this.operationsInProgress = new Map()
   }
 
-  async generateRecoveryCodes(): Promise<HttpResponse<GenerateRecoveryCodesResponseBody>> {
+  async generateRecoveryCodes(dto: {
+    serverPassword: string
+  }): Promise<HttpResponse<GenerateRecoveryCodesResponseBody>> {
     if (this.operationsInProgress.get(AuthApiOperations.GenerateRecoveryCodes)) {
       throw new ApiCallError(ErrorMessage.GenericInProgress)
     }
@@ -27,7 +32,9 @@ export class AuthApiService implements AuthApiServiceInterface {
     this.operationsInProgress.set(AuthApiOperations.GenerateRecoveryCodes, true)
 
     try {
-      const response = await this.authServer.generateRecoveryCodes()
+      const response = await this.authServer.generateRecoveryCodes({
+        headers: [{ key: 'x-server-password', value: dto.serverPassword }],
+      })
 
       return response
     } catch (error) {
@@ -50,7 +57,7 @@ export class AuthApiService implements AuthApiServiceInterface {
 
     try {
       const response = await this.authServer.recoveryKeyParams({
-        api_version: ApiVersion.v0,
+        api_version: this.apiVersion,
         code_challenge: dto.codeChallenge,
         recovery_codes: dto.recoveryCodes,
         username: dto.username,
@@ -69,6 +76,7 @@ export class AuthApiService implements AuthApiServiceInterface {
     password: string
     codeVerifier: string
     recoveryCodes: string
+    hvmToken?: string
   }): Promise<HttpResponse<SignInWithRecoveryCodesResponseBody>> {
     if (this.operationsInProgress.get(AuthApiOperations.SignInWithRecoveryCodes)) {
       throw new ApiCallError(ErrorMessage.GenericInProgress)
@@ -78,11 +86,12 @@ export class AuthApiService implements AuthApiServiceInterface {
 
     try {
       const response = await this.authServer.signInWithRecoveryCodes({
-        api_version: ApiVersion.v0,
+        api_version: this.apiVersion,
         code_verifier: dto.codeVerifier,
         password: dto.password,
         recovery_codes: dto.recoveryCodes,
         username: dto.username,
+        hvm_token: dto.hvmToken,
       })
 
       return response

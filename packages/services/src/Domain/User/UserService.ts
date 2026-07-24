@@ -40,6 +40,10 @@ import { EncryptionProviderInterface } from '../Encryption/EncryptionProviderInt
 import { ReencryptTypeAItems } from '../Encryption/UseCase/TypeA/ReencryptTypeAItems'
 import { DecryptErroredPayloads } from '../Encryption/UseCase/DecryptErroredPayloads'
 
+const cleanedEmailString = (email: string) => {
+  return email.trim().toLowerCase()
+}
+
 export class UserService
   extends AbstractService<AccountEvent, AccountEventData>
   implements UserServiceInterface, InternalEventHandlerInterface
@@ -142,6 +146,7 @@ export class UserService
   public async register(
     email: string,
     password: string,
+    hvmToken: string,
     ephemeral = false,
     mergeLocal = true,
   ): Promise<UserRegistrationResponseBody> {
@@ -157,7 +162,7 @@ export class UserService
 
     try {
       this.lockSyncing()
-      const response = await this.sessions.register(email, password, ephemeral)
+      const response = await this.sessions.register(email, password, hvmToken, ephemeral)
 
       await this.notifyEventSync(AccountEvent.SignedInOrRegistered, {
         payload: {
@@ -190,6 +195,7 @@ export class UserService
     ephemeral = false,
     mergeLocal = true,
     awaitSync = false,
+    hvmToken?: string,
   ): Promise<HttpResponse<SignInResponse>> {
     if (this.encryption.hasAccount()) {
       throw Error('Tried to sign in when an account already exists.')
@@ -205,7 +211,7 @@ export class UserService
       /** Prevent a timed sync from occuring while signing in. */
       this.lockSyncing()
 
-      const { response } = await this.sessions.signIn(email, password, strict, ephemeral)
+      const { response } = await this.sessions.signIn(email, password, strict, ephemeral, undefined, hvmToken)
 
       if (!isErrorResponse(response)) {
         const notifyingFunction = awaitSync ? this.notifyEventSync.bind(this) : this.notifyEvent.bind(this)
@@ -231,13 +237,9 @@ export class UserService
     error: boolean
     message?: string
   }> {
-    if (
-      !(await this.protections.authorizeAction(ChallengeReason.DeleteAccount, {
-        fallBackToAccountPassword: true,
-        requireAccountPassword: true,
-        forcePrompt: false,
-      }))
-    ) {
+    const { success, challengeResponse } = await this.protections.authorizeAccountDeletion()
+
+    if (!success) {
       return {
         error: true,
         message: Messages.INVALID_PASSWORD,
@@ -245,7 +247,13 @@ export class UserService
     }
 
     const uuid = this.sessions.getSureUser().uuid
-    const response = await this.userApi.deleteAccount(uuid)
+    const password = challengeResponse?.getValueForType(ChallengeValidation.AccountPassword).value as string
+    const currentRootKey = await this.encryption.computeRootKey(
+      password,
+      this.encryption.getRootKeyParams() as SNRootKeyParams,
+    )
+    const serverPassword = currentRootKey.serverPassword
+    const response = await this.userApi.deleteAccount({ userUuid: uuid, serverPassword: serverPassword })
     if (isErrorResponse(response)) {
       return {
         error: true,
@@ -591,13 +599,15 @@ export class UserService
       }
     }
 
+    const newEmail = parameters.newEmail ? cleanedEmailString(parameters.newEmail) : undefined
+
     const user = this.sessions.getUser() as User
     const currentEmail = user.email
     const { currentRootKey, newRootKey } = await this.recomputeRootKeysForCredentialChange({
       currentPassword: parameters.currentPassword,
       currentEmail,
       origination: parameters.origination,
-      newEmail: parameters.newEmail,
+      newEmail: newEmail,
       newPassword: parameters.newPassword,
     })
 
@@ -607,7 +617,7 @@ export class UserService
       currentServerPassword: currentRootKey.serverPassword as string,
       newRootKey: newRootKey,
       wrappingKey,
-      newEmail: parameters.newEmail,
+      newEmail: newEmail,
     })
 
     this.unlockSyncing()

@@ -2,7 +2,7 @@
 
 import { ApplicationEvent, ReactNativeToWebEvent } from '@standardnotes/snjs'
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Button, Dimensions, Keyboard, Platform, Text, View } from 'react-native'
+import { AppState, Button, Dimensions, Keyboard, KeyboardEvent, Platform, Text, View } from 'react-native'
 import VersionInfo from 'react-native-version-info'
 import { WebView, WebViewMessageEvent } from 'react-native-webview'
 import { OnShouldStartLoadWithRequest, WebViewNativeConfig } from 'react-native-webview/lib/WebViewTypes'
@@ -15,6 +15,7 @@ import { IsDev } from './Lib/Utils'
 import { ReceivedSharedItemsHandler } from './ReceivedSharedItemsHandler'
 import { ReviewService } from './ReviewService'
 import notifee, { EventType } from '@notifee/react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 const LoggingEnabled = IsDev
 
@@ -42,6 +43,26 @@ const MobileWebAppContents = ({ destroyAndReload }: { destroyAndReload: () => vo
   const _reviewService = useRef(new ReviewService(device))
 
   const [showAndroidWebviewUpdatePrompt, setShowAndroidWebviewUpdatePrompt] = useState(false)
+  const [didLoadEnd, setDidLoadEnd] = useState(false)
+
+  const insets = useSafeAreaInsets()
+
+  const screenHeight = Dimensions.get('screen').height
+  const androidVersion = Platform.OS === 'android' ? Platform.Version : 0
+  const useFlexLayout = Platform.OS === 'ios' || androidVersion < 35
+  const [webViewContainerHeight, setWebViewContainerHeight] = useState(screenHeight)
+
+  const applyDynamicTypeFontScale = useCallback((fontScale?: number) => {
+    if (Platform.OS !== 'ios') {
+      return
+    }
+
+    const scale = fontScale ?? Dimensions.get('window').fontScale
+    webViewRef.current?.injectJavaScript(`
+      document.documentElement.style.fontSize = 'calc(1rem * ${scale})';
+      true;
+    `)
+  }, [])
 
   useEffect(() => {
     const removeStateServiceListener = stateService.addEventObserver((event: ReactNativeToWebEvent) => {
@@ -58,7 +79,7 @@ const MobileWebAppContents = ({ destroyAndReload }: { destroyAndReload: () => vo
       webViewRef.current?.postMessage(JSON.stringify({ reactNativeEvent: event, messageType: 'event' }))
     })
 
-    const keyboardShowListener = Keyboard.addListener('keyboardWillShow', () => {
+    const keyboardWillShowListener = Keyboard.addListener('keyboardWillShow', () => {
       device.reloadStatusBarStyle(false)
       webViewRef.current?.postMessage(
         JSON.stringify({
@@ -78,45 +99,89 @@ const MobileWebAppContents = ({ destroyAndReload }: { destroyAndReload: () => vo
       )
     })
 
-    const keyboardHideListener = Keyboard.addListener('keyboardDidHide', () => {
-      device.reloadStatusBarStyle(false)
-    })
-
-    const keyboardWillChangeFrame = Keyboard.addListener('keyboardWillChangeFrame', (e) => {
+    const fireKeyboardSizeChangeEvent = (e: KeyboardEvent) => {
       webViewRef.current?.postMessage(
         JSON.stringify({
-          reactNativeEvent: ReactNativeToWebEvent.KeyboardFrameWillChange,
+          reactNativeEvent: ReactNativeToWebEvent.KeyboardSizeChanged,
           messageType: 'event',
           messageData: {
             height: e.endCoordinates.height,
             contentHeight: e.endCoordinates.screenY,
-            isFloatingKeyboard: e.endCoordinates.width !== Dimensions.get('window').width,
+            isFloatingKeyboard: Math.floor(e.endCoordinates.width) !== Math.floor(Dimensions.get('window').width),
           },
         }),
       )
+    }
+
+    const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', (e) => {
+      // iOS handles this using the `willChangeFrame` event instead
+      if (Platform.OS === 'android') {
+        setWebViewContainerHeight(e.endCoordinates.screenY)
+        if (insets.bottom > 0) {
+          fireKeyboardSizeChangeEvent(e)
+          webViewRef.current?.postMessage(
+            JSON.stringify({
+              reactNativeEvent: ReactNativeToWebEvent.KeyboardDidShow,
+              messageType: 'event',
+            }),
+          )
+        }
+      }
+      device.reloadStatusBarStyle(false)
     })
 
-    const keyboardDidChangeFrame = Keyboard.addListener('keyboardDidChangeFrame', (e) => {
-      webViewRef.current?.postMessage(
-        JSON.stringify({
-          reactNativeEvent: ReactNativeToWebEvent.KeyboardFrameDidChange,
-          messageType: 'event',
-          messageData: { height: e.endCoordinates.height, contentHeight: e.endCoordinates.screenY },
-        }),
-      )
+    const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
+      // iOS handles this using the `willChangeFrame` event instead
+      if (Platform.OS === 'android') {
+        setWebViewContainerHeight(screenHeight)
+        if (insets.bottom > 0) {
+          webViewRef.current?.postMessage(
+            JSON.stringify({
+              reactNativeEvent: ReactNativeToWebEvent.KeyboardDidHide,
+              messageType: 'event',
+            }),
+          )
+        }
+      }
+      device.reloadStatusBarStyle(false)
+    })
+
+    const keyboardWillChangeFrame = Keyboard.addListener('keyboardWillChangeFrame', (e) => {
+      fireKeyboardSizeChangeEvent(e)
     })
 
     return () => {
       removeStateServiceListener()
       removeBackHandlerServiceListener()
       removeColorSchemeServiceListener()
-      keyboardShowListener.remove()
-      keyboardHideListener.remove()
-      keyboardWillChangeFrame.remove()
-      keyboardDidChangeFrame.remove()
+      keyboardWillShowListener.remove()
       keyboardWillHideListener.remove()
+      keyboardDidShowListener.remove()
+      keyboardDidHideListener.remove()
+      keyboardWillChangeFrame.remove()
     }
-  }, [webViewRef, stateService, device, androidBackHandlerService, colorSchemeService])
+  }, [webViewRef, stateService, device, androidBackHandlerService, colorSchemeService, insets.bottom, screenHeight])
+
+  useEffect(() => {
+    if (Platform.OS !== 'ios') {
+      return
+    }
+
+    const dimensionsListener = Dimensions.addEventListener('change', ({ window }) => {
+      applyDynamicTypeFontScale(window.fontScale)
+    })
+
+    const appStateListener = AppState.addEventListener('change', (state) => {
+      if (state === 'active') {
+        applyDynamicTypeFontScale()
+      }
+    })
+
+    return () => {
+      dimensionsListener.remove()
+      appStateListener.remove()
+    }
+  }, [applyDynamicTypeFontScale])
 
   useEffect(() => {
     return notifee.onForegroundEvent(({ type, detail }) => {
@@ -273,6 +338,7 @@ const MobileWebAppContents = ({ destroyAndReload }: { destroyAndReload: () => vo
     }
     if (message === 'appLoaded') {
       setDidLoadEnd(true)
+      applyDynamicTypeFontScale()
       return
     }
     try {
@@ -333,6 +399,7 @@ const MobileWebAppContents = ({ destroyAndReload }: { destroyAndReload: () => vo
       receivedSharedItemsHandlerInstance.deinit()
     }
   }, [])
+
   useEffect(() => {
     return device.addApplicationEventReceiver((event) => {
       if (event === ApplicationEvent.Launched) {
@@ -341,7 +408,16 @@ const MobileWebAppContents = ({ destroyAndReload }: { destroyAndReload: () => vo
     })
   }, [device])
 
-  const [didLoadEnd, setDidLoadEnd] = useState(false)
+  const injectJS = `
+    document.documentElement.style.setProperty('--safe-area-inset-top', '${insets.top}px');
+    document.documentElement.style.setProperty('--safe-area-inset-bottom', '${insets.bottom}px');
+    document.documentElement.style.setProperty('--safe-area-inset-left', '${insets.left}px');
+    document.documentElement.style.setProperty('--safe-area-inset-right', '${insets.right}px');
+    true;
+  `
+  if (Platform.OS === 'android') {
+    webViewRef.current?.injectJavaScript(injectJS)
+  }
 
   if (showAndroidWebviewUpdatePrompt) {
     return (
@@ -386,10 +462,18 @@ const MobileWebAppContents = ({ destroyAndReload }: { destroyAndReload: () => vo
 
   return (
     <View
-      style={{
-        flex: 1,
-        backgroundColor: '#000000',
-      }}
+      style={
+        useFlexLayout
+          ? {
+              flex: 1,
+              backgroundColor: '#000000',
+            }
+          : {
+              height: webViewContainerHeight,
+              backgroundColor: '#000000',
+              overflow: 'hidden',
+            }
+      }
     >
       <WebView
         ref={webViewRef}

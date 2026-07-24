@@ -1,12 +1,11 @@
 import {
   confirmDialog,
   CREATE_NEW_TAG_COMMAND,
-  KeyboardService,
   NavigationControllerPersistableValue,
   VaultDisplayService,
   VaultDisplayServiceEvent,
 } from '@standardnotes/ui-services'
-import { STRING_DELETE_TAG } from '@/Constants/Strings'
+import { STRING_DELETE_TAG, StringUtils } from '@/Constants/Strings'
 import { SMART_TAGS_FEATURE_NAME } from '@/Constants/Constants'
 import {
   ContentType,
@@ -43,6 +42,8 @@ import { TagListSectionType } from '@/Components/Tags/TagListSection'
 import { PaneLayout } from '../PaneController/PaneLayout'
 import { TagsCountsState } from './TagsCountsState'
 import { PaneController } from '../PaneController/PaneController'
+import { RecentActionsState } from '../../Application/Recents'
+import { CommandService } from '../../Components/CommandPalette/CommandService'
 
 export class NavigationController
   extends AbstractViewController
@@ -59,6 +60,7 @@ export class NavigationController
   previouslySelected_: AnyTag | undefined = undefined
   editing_: SNTag | SmartView | undefined = undefined
   addingSubtagTo: SNTag | undefined = undefined
+  tagToScrollIntoView: AnyTag | undefined = undefined
 
   contextMenuOpen = false
   contextMenuClickLocation: { x: number; y: number } = { x: 0, y: 0 }
@@ -72,7 +74,7 @@ export class NavigationController
   constructor(
     private featuresController: FeaturesController,
     private vaultDisplayService: VaultDisplayService,
-    private keyboardService: KeyboardService,
+    private commands: CommandService,
     private paneController: PaneController,
     private sync: SyncServiceInterface,
     private mutator: MutatorClientInterface,
@@ -80,6 +82,7 @@ export class NavigationController
     private preferences: PreferenceServiceInterface,
     private alerts: AlertService,
     private _changeAndSaveItem: ChangeAndSaveItem,
+    private recents: RecentActionsState,
     eventBus: InternalEventBusInterface,
   ) {
     super(eventBus)
@@ -196,14 +199,13 @@ export class NavigationController
     )
 
     this.disposers.push(
-      this.keyboardService.addCommandHandler({
-        command: CREATE_NEW_TAG_COMMAND,
-        category: 'General',
-        description: 'Create new tag',
-        onKeyDown: () => {
-          this.createNewTemplate()
-        },
-      }),
+      this.commands.addWithShortcut(
+        CREATE_NEW_TAG_COMMAND,
+        'General',
+        'Create new tag',
+        () => this.createNewTemplate(),
+        'add',
+      ),
     )
 
     this.setDisplayOptionsAndReloadTags = debounce(this.setDisplayOptionsAndReloadTags, 50)
@@ -390,10 +392,14 @@ export class NavigationController
       return []
     }
 
+    if (this.isSearching) {
+      return []
+    }
+
     const children = this.items.getTagChildren(tag)
 
     const childrenUuids = children.map((childTag) => childTag.uuid)
-    const childrenTags = this.isSearching ? children : this.tags.filter((tag) => childrenUuids.includes(tag.uuid))
+    const childrenTags = this.tags.filter((tag) => childrenUuids.includes(tag.uuid))
     return childrenTags
   }
 
@@ -479,8 +485,9 @@ export class NavigationController
   public async setSelectedTag(
     tag: AnyTag | undefined,
     location: TagListSectionType,
-    { userTriggered } = { userTriggered: false },
+    options?: { userTriggered: boolean; scrollIntoView?: boolean },
   ) {
+    const { userTriggered = false, scrollIntoView = false } = options || {}
     if (tag && tag.conflictOf) {
       this._changeAndSaveItem
         .execute(tag, (mutator) => {
@@ -505,6 +512,10 @@ export class NavigationController
         return
       }
 
+      if (tag) {
+        this.recents.add(tag.uuid)
+      }
+
       await this.eventBus.publishSync(
         {
           type: CrossControllerEvent.TagChanged,
@@ -512,6 +523,9 @@ export class NavigationController
         },
         InternalEventPublishStrategy.SEQUENCE,
       )
+      if (userTriggered && scrollIntoView) {
+        this.tagToScrollIntoView = tag
+      }
     })
   }
 
@@ -604,7 +618,7 @@ export class NavigationController
     let shouldDelete = !userTriggered
     if (userTriggered) {
       shouldDelete = await confirmDialog({
-        title: `Delete tag "${tag.title}"?`,
+        title: StringUtils.deleteTag(tag.title),
         text: STRING_DELETE_TAG,
         confirmButtonStyle: 'danger',
       })
@@ -678,6 +692,7 @@ export class NavigationController
       searchQuery: {
         query: this.searchQuery,
         includeProtectedNoteText: false,
+        shouldCheckForSomeTagMatches: false,
       },
     })
     this.reloadTags()

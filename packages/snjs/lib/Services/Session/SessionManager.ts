@@ -70,14 +70,11 @@ import {
   UserApiServiceInterface,
   UserRegistrationResponseBody,
 } from '@standardnotes/api'
+import { cleanedEmailString } from './cleanedEmailString'
 
 export const MINIMUM_PASSWORD_LENGTH = 8
 export const MissingAccountParams = 'missing-params'
 const ThirtyMinutes = 30 * 60 * 1000
-
-const cleanedEmailString = (email: string) => {
-  return email.trim().toLowerCase()
-}
 
 /**
  * The session manager is responsible for loading initial user state, and any relevant
@@ -404,7 +401,12 @@ export class SessionManager
     return undefined
   }
 
-  async register(email: string, password: string, ephemeral: boolean): Promise<UserRegistrationResponseBody> {
+  async register(
+    email: string,
+    password: string,
+    hvmToken: string,
+    ephemeral: boolean,
+  ): Promise<UserRegistrationResponseBody> {
     if (password.length < MINIMUM_PASSWORD_LENGTH) {
       throw new ApiCallError(
         ErrorMessage.InsufficientPasswordMessage.replace('%LENGTH%', MINIMUM_PASSWORD_LENGTH.toString()),
@@ -429,6 +431,7 @@ export class SessionManager
     const registerResponse = await this.userApiService.register({
       email,
       serverPassword,
+      hvmToken,
       keyParams,
       ephemeral,
     })
@@ -503,8 +506,9 @@ export class SessionManager
     strict = false,
     ephemeral = false,
     minAllowedVersion?: Common.ProtocolVersion,
+    hvmToken?: string,
   ): Promise<SessionManagerResponse> {
-    const result = await this.performSignIn(email, password, strict, ephemeral, minAllowedVersion)
+    const result = await this.performSignIn(email, password, strict, ephemeral, minAllowedVersion, hvmToken)
     if (
       isErrorResponse(result.response) &&
       getErrorFromErrorResponse(result.response).tag !== ErrorTag.ClientValidationError &&
@@ -515,7 +519,7 @@ export class SessionManager
         /**
          * Try signing in with trimmed + lowercase version of email
          */
-        return this.performSignIn(cleanedEmail, password, strict, ephemeral, minAllowedVersion)
+        return this.performSignIn(cleanedEmail, password, strict, ephemeral, minAllowedVersion, hvmToken)
       } else {
         return result
       }
@@ -530,6 +534,7 @@ export class SessionManager
     strict = false,
     ephemeral = false,
     minAllowedVersion?: Common.ProtocolVersion,
+    hvmToken?: string,
   ): Promise<SessionManagerResponse> {
     const paramsResult = await this.retrieveKeyParams({
       email,
@@ -593,7 +598,7 @@ export class SessionManager
       }
     }
     const rootKey = await this.encryptionService.computeRootKey(password, keyParams)
-    const signInResponse = await this.bypassChecksAndSignInWithRootKey(email, rootKey, ephemeral)
+    const signInResponse = await this.bypassChecksAndSignInWithRootKey(email, rootKey, ephemeral, hvmToken)
 
     return {
       response: signInResponse,
@@ -604,6 +609,7 @@ export class SessionManager
     email: string,
     rootKey: SNRootKey,
     ephemeral = false,
+    hvmToken?: string,
   ): Promise<HttpResponse<SignInResponse>> {
     const { wrappingKey, canceled } = await this.challengeService.getWrappingKeyIfApplicable()
 
@@ -619,6 +625,7 @@ export class SessionManager
       email,
       serverPassword: rootKey.serverPassword as string,
       ephemeral,
+      hvmToken,
     })
 
     if (!signInResponse.data || isErrorResponse(signInResponse)) {
@@ -649,7 +656,7 @@ export class SessionManager
       currentServerPassword: parameters.currentServerPassword,
       newServerPassword: parameters.newRootKey.serverPassword as string,
       newKeyParams: parameters.newRootKey.keyParams,
-      newEmail: parameters.newEmail,
+      newEmail: parameters.newEmail ? cleanedEmailString(parameters.newEmail) : undefined,
     })
 
     const oldKeys = this._getKeyPairs.execute()
@@ -874,7 +881,14 @@ export class SessionManager
     const willRefreshTokenExpireSoon = refreshTokenExpiration.getTime() - Date.now() < ThirtyMinutes
 
     if (willAccessTokenExpireSoon || willRefreshTokenExpireSoon) {
-      return this.httpService.refreshSession()
+      const refreshSessionResultOrError = await this.httpService.refreshSession()
+      if (refreshSessionResultOrError.isFailed()) {
+        return false
+      }
+
+      const refreshSessionResult = refreshSessionResultOrError.getValue()
+
+      return isErrorResponse(refreshSessionResult)
     }
 
     return false

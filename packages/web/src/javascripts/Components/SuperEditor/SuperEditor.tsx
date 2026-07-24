@@ -1,14 +1,15 @@
 import { WebApplication } from '@/Application/WebApplication'
 import {
+  ApplicationEvent,
   isPayloadSourceRetrieved,
-  PrefKey,
   NativeFeatureIdentifier,
   FeatureStatus,
   GetSuperNoteFeature,
   EditorLineHeightValues,
   WebAppEvent,
+  LocalPrefKey,
 } from '@standardnotes/snjs'
-import { CSSProperties, FunctionComponent, useCallback, useEffect, useRef, useState } from 'react'
+import { CSSProperties, FocusEvent, FunctionComponent, useCallback, useEffect, useRef, useState } from 'react'
 import { BlocksEditor } from './BlocksEditor'
 import { BlocksEditorComposer } from './BlocksEditorComposer'
 import { ItemSelectionPlugin } from './Plugins/ItemSelectionPlugin/ItemSelectionPlugin'
@@ -27,7 +28,6 @@ import {
   ChangeContentCallbackPlugin,
   ChangeEditorFunction,
 } from './Plugins/ChangeContentCallback/ChangeContentCallback'
-import { useCommandService } from '@/Components/CommandProvider'
 import { SUPER_SHOW_MARKDOWN_PREVIEW, getPrimaryModifier } from '@standardnotes/ui-services'
 import { SuperNoteMarkdownPreview } from './SuperNoteMarkdownPreview'
 import GetMarkdownPlugin, { GetMarkdownPluginInterface } from './Plugins/GetMarkdownPlugin/GetMarkdownPlugin'
@@ -36,10 +36,11 @@ import ReadonlyPlugin from './Plugins/ReadonlyPlugin/ReadonlyPlugin'
 import ModalOverlay from '@/Components/Modal/ModalOverlay'
 import NotEntitledBanner from '../ComponentView/NotEntitledBanner'
 import AutoFocusPlugin from './Plugins/AutoFocusPlugin'
-import usePreference from '@/Hooks/usePreference'
+import { useLocalPreference } from '@/Hooks/usePreference'
 import BlockPickerMenuPlugin from './Plugins/BlockPickerPlugin/BlockPickerPlugin'
 import { EditorEventSource } from '@/Types/EditorEventSource'
 import { ElementIds } from '@/Constants/ElementIDs'
+import { NoteFromSelectionPlugin } from './Plugins/NoteFromSelectionPlugin'
 
 export const SuperNotePreviewCharLimit = 160
 
@@ -50,6 +51,8 @@ type Props = {
   filesController: FilesController
   spellcheck: boolean
   readonly?: boolean
+  onFocus?: (event: FocusEvent) => void
+  onBlur?: (event: FocusEvent) => void
 }
 
 export const SuperEditor: FunctionComponent<Props> = ({
@@ -59,6 +62,8 @@ export const SuperEditor: FunctionComponent<Props> = ({
   spellcheck,
   controller,
   readonly,
+  onFocus,
+  onBlur,
 }) => {
   const note = useRef(controller.item)
   const changeEditorFunction = useRef<ChangeEditorFunction>()
@@ -67,7 +72,7 @@ export const SuperEditor: FunctionComponent<Props> = ({
   const getMarkdownPlugin = useRef<GetMarkdownPluginInterface | null>(null)
   const [featureStatus, setFeatureStatus] = useState<FeatureStatus>(FeatureStatus.Entitled)
 
-  useEffect(() => {
+  const reloadFeatureStatus = useCallback(() => {
     setFeatureStatus(
       application.features.getFeatureStatus(
         NativeFeatureIdentifier.create(NativeFeatureIdentifier.TYPES.SuperEditor).getValue(),
@@ -78,22 +83,40 @@ export const SuperEditor: FunctionComponent<Props> = ({
     )
   }, [application.features])
 
-  const commandService = useCommandService()
+  useEffect(() => {
+    reloadFeatureStatus()
+  }, [reloadFeatureStatus])
 
   useEffect(() => {
-    return commandService.addCommandHandler({
-      command: SUPER_SHOW_MARKDOWN_PREVIEW,
-      category: 'Super notes',
-      description: 'Show markdown preview for current note',
-      onKeyDown: () => setShowMarkdownPreview(true),
+    return application.addEventObserver(async (event) => {
+      switch (event) {
+        case ApplicationEvent.FeaturesAvailabilityChanged:
+        case ApplicationEvent.UserRolesChanged:
+        case ApplicationEvent.LocalDataLoaded:
+          reloadFeatureStatus()
+          break
+      }
     })
-  }, [commandService])
+  }, [application, reloadFeatureStatus])
+
+  const keyboardService = application.keyboardService
+  const isEditorReadonly = note.current.locked || Boolean(readonly) || featureStatus !== FeatureStatus.Entitled
+
+  useEffect(() => {
+    return application.commands.addWithShortcut(
+      SUPER_SHOW_MARKDOWN_PREVIEW,
+      'Super notes',
+      'Show markdown preview for current note',
+      () => setShowMarkdownPreview((s) => !s),
+      'markdown',
+    )
+  }, [application.commands])
 
   useEffect(() => {
     const platform = application.platform
     const primaryModifier = getPrimaryModifier(application.platform)
 
-    return commandService.registerExternalKeyboardShortcutHelpItems([
+    return keyboardService.registerExternalKeyboardShortcutHelpItems([
       {
         key: 'b',
         modifiers: [primaryModifier],
@@ -123,7 +146,7 @@ export const SuperEditor: FunctionComponent<Props> = ({
         platform: platform,
       },
     ])
-  }, [application.platform, commandService])
+  }, [application.platform, keyboardService])
 
   const closeMarkdownPreview = useCallback(() => {
     setShowMarkdownPreview(false)
@@ -150,6 +173,9 @@ export const SuperEditor: FunctionComponent<Props> = ({
         ignoreNextChange.current = false
         return
       }
+      if (isEditorReadonly) {
+        return
+      }
 
       void controller.saveAndAwaitLocalPropagation({
         text: value,
@@ -160,13 +186,14 @@ export const SuperEditor: FunctionComponent<Props> = ({
         },
       })
     },
-    [controller],
+    [controller, isEditorReadonly],
   )
 
   const handleBubbleRemove = useCallback(
     (itemUuid: string) => {
       const item = application.items.findItem(itemUuid)
       if (item) {
+        // TODO: We should only unlink item if all link bubbles to that item have been removed from the note
         linkingController.unlinkItemFromSelectedItem(item).catch(console.error)
       }
     },
@@ -190,8 +217,8 @@ export const SuperEditor: FunctionComponent<Props> = ({
     return disposer
   }, [controller, controller.item.uuid])
 
-  const lineHeight = usePreference(PrefKey.EditorLineHeight)
-  const fontSize = usePreference(PrefKey.EditorFontSize)
+  const [lineHeight] = useLocalPreference(LocalPrefKey.EditorLineHeight)
+  const [fontSize] = useLocalPreference(LocalPrefKey.EditorFontSize)
   const responsiveFontSize = useResponsiveEditorFontSize(fontSize, false)
 
   const ref = useRef<HTMLDivElement>(null)
@@ -220,9 +247,13 @@ export const SuperEditor: FunctionComponent<Props> = ({
     }
   }, [])
 
-  const onFocus = useCallback(() => {
-    application.notifyWebEvent(WebAppEvent.EditorDidFocus, { eventSource: EditorEventSource.UserInteraction })
-  }, [application])
+  const handleFocus = useCallback(
+    (event: FocusEvent) => {
+      application.notifyWebEvent(WebAppEvent.EditorDidFocus, { eventSource: EditorEventSource.UserInteraction })
+      onFocus?.(event)
+    },
+    [application, onFocus],
+  )
 
   return (
     <div
@@ -242,14 +273,15 @@ export const SuperEditor: FunctionComponent<Props> = ({
       <ErrorBoundary>
         <LinkingControllerProvider controller={linkingController}>
           <FilesControllerProvider controller={filesController}>
-            <BlocksEditorComposer readonly={note.current.locked || readonly} initialValue={note.current.text}>
+            <BlocksEditorComposer readonly={isEditorReadonly} initialValue={note.current.text}>
               <BlocksEditor
                 onChange={handleChange}
                 className="blocks-editor h-full resize-none"
                 previewLength={SuperNotePreviewCharLimit}
                 spellcheck={spellcheck}
-                readonly={note.current.locked || readonly}
-                onFocus={onFocus}
+                readonly={isEditorReadonly}
+                onFocus={handleFocus}
+                onBlur={onBlur}
               >
                 <ItemSelectionPlugin currentNote={note.current} />
                 <FilePlugin currentNote={note.current} />
@@ -260,9 +292,12 @@ export const SuperEditor: FunctionComponent<Props> = ({
                 />
                 <NodeObserverPlugin nodeType={BubbleNode} onRemove={handleBubbleRemove} />
                 <NodeObserverPlugin nodeType={FileNode} onRemove={handleBubbleRemove} />
-                {readonly === undefined && <ReadonlyPlugin note={note.current} />}
+                {readonly === undefined && (
+                  <ReadonlyPlugin note={note.current} forceReadonly={featureStatus !== FeatureStatus.Entitled} />
+                )}
                 <AutoFocusPlugin isEnabled={controller.isTemplateNote} />
                 <BlockPickerMenuPlugin />
+                <NoteFromSelectionPlugin currentNote={note.current} />
               </BlocksEditor>
             </BlocksEditorComposer>
           </FilesControllerProvider>

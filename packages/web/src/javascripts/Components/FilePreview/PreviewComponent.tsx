@@ -5,11 +5,10 @@ import { FunctionComponent, useCallback, useEffect, useMemo, useRef } from 'reac
 import Button from '../Button/Button'
 import { createObjectURLWithRef } from './CreateObjectURLWithRef'
 import ImagePreview from './ImagePreview'
-import { ImageZoomLevelProps } from './ImageZoomLevelProps'
+import { OptionalSuperEmbeddedImageProps } from './OptionalSuperEmbeddedImageProps'
 import { PreviewableTextFileTypes, RequiresNativeFilePreview } from './isFilePreviewable'
 import TextPreview from './TextPreview'
-import { parseFileName } from '@standardnotes/filepicker'
-import { sanitizeFileName } from '@standardnotes/ui-services'
+import { parseFileName, sanitizeFileName } from '@standardnotes/utils'
 import VideoPreview from './VideoPreview'
 
 type Props = {
@@ -17,7 +16,7 @@ type Props = {
   file: FileItem
   bytes: Uint8Array
   isEmbeddedInSuper: boolean
-} & ImageZoomLevelProps
+} & OptionalSuperEmbeddedImageProps
 
 const PreviewComponent: FunctionComponent<Props> = ({
   application,
@@ -26,6 +25,8 @@ const PreviewComponent: FunctionComponent<Props> = ({
   isEmbeddedInSuper,
   imageZoomLevel,
   setImageZoomLevel,
+  alignment,
+  changeAlignment,
 }) => {
   const objectUrlRef = useRef<string>()
 
@@ -85,12 +86,21 @@ const PreviewComponent: FunctionComponent<Props> = ({
         isEmbeddedInSuper={isEmbeddedInSuper}
         imageZoomLevel={imageZoomLevel}
         setImageZoomLevel={setImageZoomLevel}
+        alignment={alignment}
+        changeAlignment={changeAlignment}
       />
     )
   }
 
   if (file.mimeType.startsWith('video/')) {
-    return <VideoPreview file={file} filesController={application.filesController} objectUrl={objectUrl} />
+    return (
+      <VideoPreview
+        file={file}
+        filesController={application.filesController}
+        objectUrl={objectUrl}
+        isEmbeddedInSuper={isEmbeddedInSuper}
+      />
+    )
   }
 
   if (file.mimeType.startsWith('audio/')) {

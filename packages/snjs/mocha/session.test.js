@@ -3,6 +3,8 @@ import WebDeviceInterface from './lib/web_device_interface.js'
 
 chai.use(chaiAsPromised)
 const expect = chai.expect
+const urlSearchParams = new URLSearchParams(window.location.search)
+const skipSessionCooldownTests = urlSearchParams.get('skipSessionCooldownTests') === 'true'
 
 describe('server session', function () {
   this.timeout(Factory.TenSecondTimeout)
@@ -68,7 +70,7 @@ describe('server session', function () {
       password: password,
     })
 
-    const response = await application.legacyApi.refreshSession()
+    const response = await application.legacyApi.deprecatedRefreshSessionOnlyUsedInE2eTests()
 
     expect(response.status).to.equal(200)
     expect(response.data.session.access_token).to.be.a('string')
@@ -96,8 +98,21 @@ describe('server session', function () {
     // After the above sync request is completed, we obtain the session information.
     const sessionAfterSync = application.legacyApi.getSession()
 
+    /**
+     * Access token and refresh token values in the new API version (20240226) represent the session uuid.
+     * So they should stay the same as they were since we are operating on the same session.
+     *
+     * The actual token values are stored in cookies indexed by the session uuid and are not accessible to the client.
+     *
+     * [E2E][Cookies] When e2e supports the expected behavior, we can uncomment the following lines.
+     *
+     */
+    // expect(sessionBeforeSync.accessToken.value).to.equal(sessionAfterSync.accessToken.value)
+    // expect(sessionBeforeSync.refreshToken.value).to.equal(sessionAfterSync.refreshToken.value)
+
     expect(sessionBeforeSync.accessToken.value).to.not.equal(sessionAfterSync.accessToken.value)
     expect(sessionBeforeSync.refreshToken.value).to.not.equal(sessionAfterSync.refreshToken.value)
+
     expect(sessionBeforeSync.accessToken.expiresAt).to.be.lessThan(sessionAfterSync.accessToken.expiresAt)
     // New token should expire in the future.
     expect(sessionAfterSync.accessToken.expiresAt).to.be.greaterThan(Date.now())
@@ -165,7 +180,7 @@ describe('server session', function () {
     expect(sessionFromStorage.refreshExpiration).to.equal(sessionFromApiService.refreshToken.expiresAt)
     expect(sessionFromStorage.readonlyAccess).to.equal(sessionFromApiService.isReadOnly())
 
-    await application.legacyApi.refreshSession()
+    await application.legacyApi.deprecatedRefreshSessionOnlyUsedInE2eTests()
 
     const updatedSessionFromStorage = await getSessionFromStorage(application)
     const updatedSessionFromApiService = application.legacyApi.getSession()
@@ -394,9 +409,15 @@ describe('server session', function () {
 
     await sleepUntilSessionExpires(application, false)
 
-    const refreshSessionResponse = await application.legacyApi.refreshSession()
+    const refreshSessionResponse = await application.legacyApi.deprecatedRefreshSessionOnlyUsedInE2eTests()
 
     expect(refreshSessionResponse.status).to.equal(400)
+    /**
+     * [E2E][Cookies] The following expectations are commented out because e2e does not support sending cookies with requests yet.
+     */
+    // expect(refreshSessionResponse.data.error.tag).to.equal('invalid-parameters')
+    // expect(refreshSessionResponse.data.error.message).to.equal('The provided parameters are not valid.')
+
     expect(refreshSessionResponse.data.error.tag).to.equal('expired-refresh-token')
     expect(refreshSessionResponse.data.error.message).to.equal('The refresh token has expired.')
 
@@ -411,7 +432,11 @@ describe('server session', function () {
     expect(syncResponse.data.error.message).to.equal('Invalid login credentials.')
   }).timeout(Factory.TwentySecondTimeout)
 
-  it('should fail when renewing a session with an invalid refresh token', async function () {
+  /**
+   * This test is skipped due to the fact that tokens reside now in cookies and are not accessible to the client.
+   * Thus it is not possible to tamper with the refresh token.
+   */
+  it.skip('should fail when renewing a session with an invalid refresh token', async function () {
     await Factory.registerUserToApplication({
       application: application,
       email: email,
@@ -429,7 +454,7 @@ describe('server session', function () {
     })
     application.sessions.initializeFromDisk()
 
-    const refreshSessionResponse = await application.legacyApi.refreshSession()
+    const refreshSessionResponse = await application.legacyApi.deprecatedRefreshSessionOnlyUsedInE2eTests()
 
     expect(refreshSessionResponse.status).to.equal(400)
     expect(refreshSessionResponse.data.error.tag).to.equal('invalid-refresh-token')
@@ -447,7 +472,7 @@ describe('server session', function () {
       password: password,
     })
 
-    const refreshPromise = application.legacyApi.refreshSession()
+    const refreshPromise = application.legacyApi.deprecatedRefreshSessionOnlyUsedInE2eTests()
     const syncResponse = await application.legacyApi.sync([])
 
     expect(syncResponse.data.error).to.be.ok
@@ -457,6 +482,63 @@ describe('server session', function () {
     /** Wait for finish so that test cleans up properly */
     await refreshPromise
   })
+
+  ;(skipSessionCooldownTests ? it.skip : it)(
+    'should tell the client to refresh the token if one is used during the cooldown period after a refresh',
+    async function () {
+    await Factory.registerUserToApplication({
+      application: application,
+      email: email,
+      password: password,
+    })
+
+    const mimickApplyingSessionFromTheServerUnsuccessfully = () => {}
+    const originalSetSessionFn = application.http.setSession
+    const originalRefreshSessionCallbackFn = application.http.refreshSessionCallback
+    application.http.setSession = mimickApplyingSessionFromTheServerUnsuccessfully
+    application.http.refreshSessionCallback = mimickApplyingSessionFromTheServerUnsuccessfully
+
+    const refreshResultOrError = await application.http.refreshSession()
+    expect(refreshResultOrError.isFailed()).to.equal(false)
+
+    const refreshResult = refreshResultOrError.getValue()
+    expect(isErrorResponse(refreshResult)).to.equal(false)
+
+    const secondRefreshResultOrErrorWithNotAppliedSession = await application.http.refreshSession()
+    expect(secondRefreshResultOrErrorWithNotAppliedSession.isFailed()).to.equal(false)
+
+    const secondRefreshResultWithNotAppliedSession = secondRefreshResultOrErrorWithNotAppliedSession.getValue()
+    expect(isErrorResponse(secondRefreshResultWithNotAppliedSession)).to.equal(false)
+
+    application.http.setSession = originalSetSessionFn
+    application.http.refreshSessionCallback = originalRefreshSessionCallbackFn
+    },
+  )
+
+  ;(skipSessionCooldownTests ? it.skip : it)(
+    'if session renewal response is dropped, next sync with server should return a 498 and successfully renew the session',
+    async function () {
+    await Factory.registerUserToApplication({
+      application: application,
+      email: email,
+      password: password,
+    })
+
+    await sleepUntilSessionExpires(application)
+
+    const refreshSpy = sinon.spy(application.http, 'refreshSession')
+
+    /**
+     * With this sync, we expect refreshSession to be called twice, once where the response is dropped,
+     * and the other time where the request succeeds
+     */
+    application.http.__simulateNextSessionRefreshResponseDrop = true
+    await application.sync.sync(syncOptions)
+    await application.sync.sync(syncOptions)
+
+      expect(refreshSpy.callCount).to.equal(2)
+    },
+  )
 
   it('notes should be synced as expected after refreshing a session', async function () {
     await Factory.registerUserToApplication({

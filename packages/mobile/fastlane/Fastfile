@@ -67,7 +67,7 @@ platform :ios do
         run_precheck_before_submit: false,
         submission_information: { add_id_info_uses_idfa: false },
         release_notes: {
-          'default': 'Fixes and improvements.'
+          'en-US': 'Fixes and improvements.'
         }
       )
     end
@@ -84,7 +84,7 @@ platform :ios do
   end
 
   desc 'Deploy prod app to tesflight'
-  lane :testflight do
+  lane :testflight_beta do
     deploy_ios 'StandardNotes', true
   end
 
@@ -158,7 +158,13 @@ platform :android do
 
   desc 'Deploy production app'
   lane :prod do
-    version = 3_002_000 + ENV['BUILD_NUMBER'].to_i
+    version = 3_004_000 + ENV['BUILD_NUMBER'].to_i
     deploy_android 'prod', version
+  end
+
+  desc 'Deploy production app to Play Store closed testing (alpha track)'
+  lane :closed_beta do
+    version = 3_004_000 + ENV['BUILD_NUMBER'].to_i
+    deploy_android 'prod', version, 'alpha'
   end
 end
