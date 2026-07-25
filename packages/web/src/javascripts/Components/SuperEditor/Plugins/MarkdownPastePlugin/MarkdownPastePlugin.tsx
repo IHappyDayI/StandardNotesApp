@@ -7,11 +7,10 @@ import {
   $getSelection,
   $createParagraphNode,
   $isRangeSelection,
-  $isElementNode,
   $setSelection,
-  $getPreviousSelection,
 } from 'lexical'
-import { $convertFromMarkdownString } from '../../Lexical/Utils/MarkdownImport'
+import { $convertFromMarkdownString } from '@lexical/markdown'
+import { $insertGeneratedNodes } from '@lexical/clipboard'
 import { MarkdownTransformers } from '../../MarkdownTransformers'
 import { $isQuoteNode } from '@lexical/rich-text'
 import { $isCodeNode } from '@lexical/code'
@@ -112,6 +111,9 @@ export default function MarkdownPastePlugin(): JSX.Element | null {
             return false
           }
 
+          const text = clipboardData.getData('text/plain')
+          if (!text) { return false }
+
           let selection = $getSelection()
           if (!$isRangeSelection(selection)) {
             return false
@@ -137,23 +139,18 @@ export default function MarkdownPastePlugin(): JSX.Element | null {
           // TODO: Handle pasting at the beginning of headings / when selecting an entire child node of a heading
           // =======================================
 
+          const initialSelection = selection.clone()
+
           // Convert the text from the clipboard from markdown to lexical nodes without inserting them into the editor. This updates the selection.
           const tempParagraph = $createParagraphNode()
           $convertFromMarkdownString(text, MarkdownTransformers, tempParagraph, true)
           const children = tempParagraph.getChildren()
 
           // Restore the initial selection.
-          const prevSelection = $getPreviousSelection()
-          if (!$isRangeSelection(prevSelection)) {
+          if (!$isRangeSelection(initialSelection)) {
             return false
           }
-          $setSelection(prevSelection.clone())
-
-          // Don't do anything if the text failed to parse as markdown and let the default implementation handle the paste event
-          const textWasNotParsedAsMarkdown = children.length == 1 && $isElementNode(children[0])
-          if (textWasNotParsedAsMarkdown) {
-            return false
-          }
+          $setSelection(initialSelection)
 
           if (entireNodeSelected) {
             selection = $getSelection()
@@ -162,7 +159,7 @@ export default function MarkdownPastePlugin(): JSX.Element | null {
             }
           }
 
-          selection.insertNodes(children)
+          $insertGeneratedNodes(editor, children, selection)
 
           // TODO: verify test cases
           // * pasting into table
