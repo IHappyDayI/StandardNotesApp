@@ -11,11 +11,11 @@ import {
   EditorFontSize,
   EditorLineHeight,
   isPayloadSourceRetrieved,
-  PrefKey,
   WebAppEvent,
   PrefDefaults,
+  LocalPrefKey,
 } from '@standardnotes/snjs'
-import { TAB_COMMAND } from '@standardnotes/ui-services'
+import { isIOS, TAB_COMMAND } from '@standardnotes/ui-services'
 import {
   ChangeEventHandler,
   forwardRef,
@@ -174,8 +174,14 @@ export const PlainEditor = forwardRef<PlainEditorInterface, Props>(
     }, [controller, focusEditor])
 
     const reloadPreferences = useCallback(() => {
-      const lineHeight = application.getPreference(PrefKey.EditorLineHeight, PrefDefaults[PrefKey.EditorLineHeight])
-      const fontSize = application.getPreference(PrefKey.EditorFontSize, PrefDefaults[PrefKey.EditorFontSize])
+      const lineHeight = application.preferences.getLocalValue(
+        LocalPrefKey.EditorLineHeight,
+        PrefDefaults[LocalPrefKey.EditorLineHeight],
+      )
+      const fontSize = application.preferences.getLocalValue(
+        LocalPrefKey.EditorFontSize,
+        PrefDefaults[LocalPrefKey.EditorFontSize],
+      )
 
       setLineHeight(lineHeight)
       setFontSize(fontSize)
@@ -184,8 +190,11 @@ export const PlainEditor = forwardRef<PlainEditorInterface, Props>(
     useEffect(() => {
       reloadPreferences()
 
-      return application.addSingleEventObserver(ApplicationEvent.PreferencesChanged, async () => {
-        reloadPreferences()
+      return application.addEventObserver(async (event) => {
+        const events = [ApplicationEvent.PreferencesChanged, ApplicationEvent.LocalPreferencesChanged]
+        if (events.includes(event)) {
+          reloadPreferences()
+        }
       })
     }, [reloadPreferences, application])
 
@@ -244,11 +253,16 @@ export const PlainEditor = forwardRef<PlainEditorInterface, Props>(
 
             setEditorText(editor.value)
 
-            void controller.saveAndAwaitLocalPropagation({
-              text: editor.value,
-              bypassDebouncer: true,
-              isUserModified: true,
-            })
+            setIsPendingLocalPropagation(true)
+
+            void controller
+              .saveAndAwaitLocalPropagation({
+                text: editor.value,
+                isUserModified: true,
+              })
+              .then(() => {
+                setIsPendingLocalPropagation(false)
+              })
           },
         })
 
@@ -291,6 +305,9 @@ export const PlainEditor = forwardRef<PlainEditorInterface, Props>(
           'editable font-editor flex-grow',
           lineHeight && `leading-${lineHeight.toLowerCase()}`,
           responsiveFontSize,
+          // Extra bottom padding is added on iOS so that text
+          // doesn't get hidden by the floating "Close keyboard" button
+          isIOS() && '!pb-12',
         )}
       ></textarea>
     )

@@ -68,6 +68,7 @@ import {
   isErrorResponse,
   MoveFileResponse,
   ValetTokenOperation,
+  MetaEndpointResponse,
 } from '@standardnotes/responses'
 import { LegacySession, MapperInterface, Session, SessionToken } from '@standardnotes/domain-core'
 import { HttpServiceInterface } from '@standardnotes/api'
@@ -76,12 +77,12 @@ import { PureCryptoInterface } from '@standardnotes/sncrypto-common'
 import { Paths } from './Paths'
 import { DiskStorageService } from '../Storage/DiskStorageService'
 import { UuidString } from '../../Types/UuidString'
-import { SettingsServerInterface } from '../Settings/SettingsServerInterface'
+import { SettingsServerInterface, MfaSecretResponse } from '../Settings/SettingsServerInterface'
 import { Strings } from '@Lib/Strings'
 import { AnyFeatureDescription } from '@standardnotes/features'
 
 /** Legacy api version field to be specified in params when calling v0 APIs. */
-const V0_API_VERSION = '20200115'
+const V0_API_VERSION = '20240226'
 
 type InvalidSessionObserver = (revoked: boolean) => void
 
@@ -290,6 +291,7 @@ export class LegacyApiService
     email: string
     serverPassword: string
     ephemeral: boolean
+    hvmToken?: string
   }): Promise<HttpResponse<SignInResponse>> {
     if (this.authenticating) {
       return this.createErrorResponse(API_MESSAGE_LOGIN_IN_PROGRESS, HttpStatusCode.BadRequest)
@@ -301,6 +303,7 @@ export class LegacyApiService
       password: dto.serverPassword,
       ephemeral: dto.ephemeral,
       code_verifier: this.inMemoryStore.getValue(StorageKey.CodeVerifier) as string,
+      hvm_token: dto.hvmToken,
     })
 
     const response = await this.request<SignInResponse>({
@@ -408,7 +411,12 @@ export class LegacyApiService
     }
   }
 
-  async refreshSession(): Promise<HttpResponse<SessionRenewalResponse>> {
+  /**
+   * @deprecated
+   *
+   * This function should be replaced with @standardnotes/api's `HttpService::refreshSession` function.
+   */
+  async deprecatedRefreshSessionOnlyUsedInE2eTests(): Promise<HttpResponse<SessionRenewalResponse>> {
     const preprocessingError = this.preprocessingError()
     if (preprocessingError) {
       return preprocessingError
@@ -555,11 +563,13 @@ export class LegacyApiService
     settingName: string,
     settingValue: string | null,
     sensitive: boolean,
+    totpToken?: string,
   ): Promise<HttpResponse<UpdateSettingResponse>> {
     const params = {
       name: settingName,
       value: settingValue,
       sensitive: sensitive,
+      ...(totpToken && { totpToken }),
     }
     return this.tokenRefreshableRequest<UpdateSettingResponse>({
       verb: HttpVerb.Put,
@@ -570,12 +580,18 @@ export class LegacyApiService
     })
   }
 
-  async getSetting(userUuid: UuidString, settingName: string): Promise<HttpResponse<GetSettingResponse>> {
+  async getSetting(
+    userUuid: UuidString,
+    settingName: string,
+    serverPassword?: string,
+  ): Promise<HttpResponse<GetSettingResponse>> {
+    const customHeaders = serverPassword ? [{ key: 'x-server-password', value: serverPassword }] : undefined
     return await this.tokenRefreshableRequest<GetSettingResponse>({
       verb: HttpVerb.Get,
       url: joinPaths(this.host, Paths.v1.setting(userUuid, settingName.toLowerCase())),
       authentication: this.getSessionAccessToken(),
       fallbackErrorMessage: API_MESSAGE_FAILED_GET_SETTINGS,
+      customHeaders,
     })
   }
 
@@ -588,12 +604,47 @@ export class LegacyApiService
     })
   }
 
-  async deleteSetting(userUuid: UuidString, settingName: string): Promise<HttpResponse<DeleteSettingResponse>> {
+  async updateSubscriptionSetting(
+    userUuid: UuidString,
+    settingName: string,
+    settingValue: string | null,
+    sensitive: boolean,
+  ): Promise<HttpResponse<UpdateSettingResponse>> {
+    const params = {
+      name: settingName,
+      value: settingValue,
+      sensitive: sensitive,
+    }
+    return this.tokenRefreshableRequest<UpdateSettingResponse>({
+      verb: HttpVerb.Put,
+      url: joinPaths(this.host, Paths.v1.subscriptionSettings(userUuid)),
+      authentication: this.getSessionAccessToken(),
+      fallbackErrorMessage: API_MESSAGE_FAILED_UPDATE_SETTINGS,
+      params,
+    })
+  }
+
+  async deleteSetting(
+    userUuid: UuidString,
+    settingName: string,
+    serverPassword?: string,
+  ): Promise<HttpResponse<DeleteSettingResponse>> {
+    const customHeaders = serverPassword ? [{ key: 'x-server-password', value: serverPassword }] : undefined
     return this.tokenRefreshableRequest<DeleteSettingResponse>({
       verb: HttpVerb.Delete,
       url: joinPaths(this.host, Paths.v1.setting(userUuid, settingName)),
       authentication: this.getSessionAccessToken(),
       fallbackErrorMessage: API_MESSAGE_FAILED_UPDATE_SETTINGS,
+      customHeaders,
+    })
+  }
+
+  async getMfaSecret(userUuid: UuidString): Promise<HttpResponse<MfaSecretResponse>> {
+    return this.tokenRefreshableRequest<MfaSecretResponse>({
+      verb: HttpVerb.Get,
+      url: joinPaths(this.host, Paths.v1.mfaSecret(userUuid)),
+      authentication: this.getSessionAccessToken(),
+      fallbackErrorMessage: 'Failed to get MFA secret.',
     })
   }
 
@@ -770,7 +821,10 @@ export class LegacyApiService
     return response.data.success
   }
 
-  public async closeUploadSession(valetToken: string, ownershipType: FileOwnershipType): Promise<boolean> {
+  public async closeUploadSession(
+    valetToken: string,
+    ownershipType: FileOwnershipType,
+  ): Promise<boolean | ClientDisplayableError> {
     const url = joinPaths(
       this.getFilesHost(),
       ownershipType === 'user' ? Paths.v1.closeUploadSession : Paths.v1.closeSharedVaultUploadSession,
@@ -784,7 +838,7 @@ export class LegacyApiService
     })
 
     if (isErrorResponse(response)) {
-      return false
+      return ClientDisplayableError.FromNetworkError(response)
     }
 
     return response.data.success
@@ -917,7 +971,17 @@ export class LegacyApiService
   }
 
   private preprocessAuthenticatedErrorResponse(response: HttpResponse) {
-    if (response.status === HttpStatusCode.Unauthorized && this.session) {
+    if (!this.session) {
+      return
+    }
+
+    /**
+     * In most cases the ExpiredAccessToken erorr shouldn't reach this function, since if a 498 is caught, a refresh
+     * will automatically take place. However there does appear to be rare cases where for some reason the 498 falls through,
+     * perhaps because for example the server responds to a refresh request with a 498. In those cases, we'll just
+     * fallback here to the invalid session observer so that the user can be reprompted for auth.
+     */
+    if (response.status === HttpStatusCode.Unauthorized || response.status === HttpStatusCode.ExpiredAccessToken) {
       this.invalidSessionObserver?.(response.data.error?.tag === ErrorTag.RevokedSession)
     }
   }
@@ -932,5 +996,10 @@ export class LegacyApiService
     }
 
     return this.session.accessToken
+  }
+
+  public getCaptchaUrl() {
+    const response = this.httpService.get<MetaEndpointResponse>(Paths.v1.meta)
+    return response
   }
 }

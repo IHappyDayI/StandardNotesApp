@@ -63,6 +63,7 @@ export class FetchRequestHandler implements RequestHandlerInterface {
     return new Request(httpRequest.url, {
       method: httpRequest.verb,
       headers,
+      credentials: 'include',
     })
   }
 
@@ -133,7 +134,7 @@ export class FetchRequestHandler implements RequestHandlerInterface {
           response.data.error = {
             message: ErrorMessage.RateLimited,
           }
-        } else {
+        } else if (!response.data.error.message) {
           response.data.error.message = ErrorMessage.RateLimited
         }
       }

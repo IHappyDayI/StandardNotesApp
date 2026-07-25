@@ -21,7 +21,7 @@ Standard Notes is an end-to-end encrypted note-taking app for digitalists and pr
 	- [Mac](https://standardnotes.com/download)
 	- [Windows](https://standardnotes.com/download)
 	- [Linux](https://standardnotes.com/download)
-	- [iOS](https://standardnotes.com/download/https://itunes.apple.com/us/app/standard-notes/id1285392450?mt=8)
+	- [iOS](https://itunes.apple.com/us/app/standard-notes/id1285392450?mt=8)
 	- [Android](https://play.google.com/store/apps/details?id=com.standardnotes)
 4. You're all set. Standard Notes comes out of the box with end-to-end encrypted sync on all your devices.
 
@@ -45,15 +45,18 @@ Questions? Find answers on our [Help page](https://standardnotes.com/help).
 
 ---
 
-### Docker setup
+### Self-hosting the web app
 
-If you'd like to self-host the web application, we recommend using our official [Docker hub image](https://hub.docker.com/repository/docker/standardnotes/web).
+Our web app is compiled into a folder of static HTML, JS, and CSS files. You can serve these files behind a web server to get started:
 
-```
-docker run -d -p 3001:3001 --env-file=.env.sample standardnotes/web:stable
-```
+1. `git clone https://github.com/standardnotes/app.git`
+2. `cd app`
+3. `yarn install`
+4. `yarn build:web`
+5. `cd packages/web`
+6. You can then use Python to serve this folder over http: `python -m http.server 8080`
 
-You can then access the app at `http://localhost:3001`. It may take a minute for the server to start up.
+You can now access the app at `http://localhost:8080`.
 
 ### Running Web App in Development Mode
 

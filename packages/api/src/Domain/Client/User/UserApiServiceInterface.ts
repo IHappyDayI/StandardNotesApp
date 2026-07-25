@@ -11,6 +11,7 @@ export interface UserApiServiceInterface {
   register(registerDTO: {
     email: string
     serverPassword: string
+    hvmToken?: string
     keyParams: RootKeyParamsInterface
     ephemeral: boolean
   }): Promise<HttpResponse<UserRegistrationResponseBody>>
@@ -21,5 +22,8 @@ export interface UserApiServiceInterface {
     requestType: UserRequestType
   }): Promise<HttpResponse<UserRequestResponseBody>>
 
-  deleteAccount(userUuid: string): Promise<HttpResponse<UserDeletionResponseBody>>
+  deleteAccount(dto: {
+    userUuid: string
+    serverPassword: string | undefined
+  }): Promise<HttpResponse<UserDeletionResponseBody>>
 }

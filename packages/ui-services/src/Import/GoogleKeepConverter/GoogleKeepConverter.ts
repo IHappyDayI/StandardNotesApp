@@ -1,5 +1,5 @@
 import { SNNote } from '@standardnotes/models'
-import { Converter, InsertNoteFn } from '../Converter'
+import { Converter, HTMLToSuperConverterFunction, InsertNoteFn } from '../Converter'
 
 type Content =
   | {
@@ -40,6 +40,10 @@ export class GoogleKeepConverter implements Converter {
       console.error(error)
     }
 
+    if (content.length > 0 && content.includes('class="content"')) {
+      return true
+    }
+
     return false
   }
 
@@ -67,14 +71,15 @@ export class GoogleKeepConverter implements Converter {
     data: string,
     file: { name: string },
     insertNote: InsertNoteFn,
-    convertHTMLToSuper: (html: string) => string,
+    convertHTMLToSuper: HTMLToSuperConverterFunction,
     canUseSuper: boolean,
   ): Promise<SNNote> {
-    const rootElement = document.createElement('html')
-    rootElement.innerHTML = data
+    const doc = new DOMParser().parseFromString(data, 'text/html')
+    const rootElement = doc.documentElement
 
     const headingElement = rootElement.getElementsByClassName('heading')[0]
-    const date = new Date(headingElement?.textContent || '')
+    const parsedDate = new Date(headingElement?.textContent || '')
+    const date = parsedDate instanceof Date && !isNaN(parsedDate.getTime()) ? parsedDate : new Date()
     headingElement?.remove()
 
     const contentElement = rootElement.getElementsByClassName('content')[0]
@@ -105,11 +110,14 @@ export class GoogleKeepConverter implements Converter {
     })
 
     if (!canUseSuper) {
-      // Replace <br> with \n so line breaks get recognised
-      contentElement.innerHTML = contentElement.innerHTML.replace(/<br>/g, '\n')
+      Array.from(contentElement.querySelectorAll('br')).forEach((br) => {
+        br.replaceWith(doc.createTextNode('\n'))
+      })
       content = contentElement.textContent
     } else {
-      content = convertHTMLToSuper(rootElement.innerHTML)
+      content = convertHTMLToSuper(rootElement.innerHTML, {
+        addLineBreaks: false,
+      })
     }
 
     if (!content) {

@@ -18,17 +18,17 @@ import {
 } from 'lexical'
 
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext'
-import useLexicalEditable from '@lexical/react/useLexicalEditable'
+import { useLexicalEditable } from '@lexical/react/useLexicalEditable'
 import {
-  $deleteTableColumn__EXPERIMENTAL,
-  $deleteTableRow__EXPERIMENTAL,
+  $deleteTableColumnAtSelection,
+  $deleteTableRowAtSelection,
   $getNodeTriplet,
   $getTableCellNodeFromLexicalNode,
   $getTableColumnIndexFromTableCellNode,
   $getTableNodeFromLexicalNodeOrThrow,
   $getTableRowIndexFromTableCellNode,
-  $insertTableColumn__EXPERIMENTAL,
-  $insertTableRow__EXPERIMENTAL,
+  $insertTableColumnAtSelection,
+  $insertTableRowAtSelection,
   $isTableCellNode,
   $isTableRowNode,
   $isTableSelection,
@@ -190,7 +190,7 @@ function TableActionMenu({ onClose, tableCellNode: _tableCellNode, cellMerge }: 
 
         const tableSelection = getTableObserverFromTableElement(tableElement)
         if (tableSelection !== null) {
-          tableSelection.clearHighlight()
+          tableSelection.$clearHighlight()
         }
 
         tableNode.markDirty()
@@ -249,7 +249,7 @@ function TableActionMenu({ onClose, tableCellNode: _tableCellNode, cellMerge }: 
   const insertTableRowAtSelection = useCallback(
     (shouldInsertAfter: boolean) => {
       editor.update(() => {
-        $insertTableRow__EXPERIMENTAL(shouldInsertAfter)
+        $insertTableRowAtSelection(shouldInsertAfter)
         onClose()
       })
     },
@@ -260,7 +260,7 @@ function TableActionMenu({ onClose, tableCellNode: _tableCellNode, cellMerge }: 
     (shouldInsertAfter: boolean) => {
       editor.update(() => {
         for (let i = 0; i < selectionCounts.columns; i++) {
-          $insertTableColumn__EXPERIMENTAL(shouldInsertAfter)
+          $insertTableColumnAtSelection(shouldInsertAfter)
         }
         onClose()
       })
@@ -270,7 +270,7 @@ function TableActionMenu({ onClose, tableCellNode: _tableCellNode, cellMerge }: 
 
   const deleteTableRowAtSelection = useCallback(() => {
     editor.update(() => {
-      $deleteTableRow__EXPERIMENTAL()
+      $deleteTableRowAtSelection()
       onClose()
     })
   }, [editor, onClose])
@@ -287,7 +287,7 @@ function TableActionMenu({ onClose, tableCellNode: _tableCellNode, cellMerge }: 
 
   const deleteTableColumnAtSelection = useCallback(() => {
     editor.update(() => {
-      $deleteTableColumn__EXPERIMENTAL()
+      $deleteTableColumnAtSelection()
       onClose()
     })
   }, [editor, onClose])
@@ -552,7 +552,7 @@ function TableCellActionMenuContainer({
   }, [prevTableCellDOM, tableCellNode])
 
   return (
-    <div className="table-cell-action-button-container" ref={menuButtonRef}>
+    <div className="absolute left-0 top-0 will-change-transform" ref={menuButtonRef}>
       {tableCellNode != null && (
         <>
           <RoundIconButton

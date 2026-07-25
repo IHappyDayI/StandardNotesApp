@@ -2,7 +2,7 @@ import { AnyKeyParamsContent } from '@standardnotes/common'
 import { SessionBody } from '@standardnotes/responses'
 
 export interface AuthClientInterface {
-  generateRecoveryCodes(): Promise<string | false>
+  generateRecoveryCodes(dto: { serverPassword: string }): Promise<string | false>
   recoveryKeyParams(dto: {
     username: string
     codeChallenge: string
@@ -13,8 +13,10 @@ export interface AuthClientInterface {
     password: string
     codeVerifier: string
     recoveryCodes: string
+    hvmToken?: string
   }): Promise<
     | {
+        success: true
         keyParams: AnyKeyParamsContent
         session: SessionBody
         user: {
@@ -23,6 +25,9 @@ export interface AuthClientInterface {
           protocolVersion: string
         }
       }
-    | false
+    | {
+        success: false
+        captchaURL: string
+      }
   >
 }

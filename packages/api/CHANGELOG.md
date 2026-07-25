@@ -3,6 +3,90 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.26.98](https://github.com/standardnotes/app/compare/@standardnotes/api@1.26.97...@standardnotes/api@1.26.98) (2026-07-18)
+
+**Note:** Version bump only for package @standardnotes/api
+
+## [1.26.97](https://github.com/standardnotes/app/compare/@standardnotes/api@1.26.96...@standardnotes/api@1.26.97) (2026-04-24)
+
+**Note:** Version bump only for package @standardnotes/api
+
+## [1.26.96](https://github.com/standardnotes/app/compare/@standardnotes/api@1.26.95...@standardnotes/api@1.26.96) (2025-12-18)
+
+### Bug Fixes
+
+* Shows informative error on UI when file upload limit is reached ([#2961](https://github.com/standardnotes/app/issues/2961)) ([844b7a7](https://github.com/standardnotes/app/commit/844b7a7a2b26bd4e74c2d8d36ddfa9e28b47f589))
+
+## [1.26.95](https://github.com/standardnotes/app/compare/@standardnotes/api@1.26.94...@standardnotes/api@1.26.95) (2025-11-06)
+
+**Note:** Version bump only for package @standardnotes/api
+
+## [1.26.94](https://github.com/standardnotes/app/compare/@standardnotes/api@1.26.93...@standardnotes/api@1.26.94) (2025-08-26)
+
+**Note:** Version bump only for package @standardnotes/api
+
+## [1.26.93](https://github.com/standardnotes/app/compare/@standardnotes/api@1.26.92...@standardnotes/api@1.26.93) (2025-07-15)
+
+**Note:** Version bump only for package @standardnotes/api
+
+## [1.26.92](https://github.com/standardnotes/app/compare/@standardnotes/api@1.26.91...@standardnotes/api@1.26.92) (2025-06-24)
+
+**Note:** Version bump only for package @standardnotes/api
+
+## [1.26.91](https://github.com/standardnotes/app/compare/@standardnotes/api@1.26.90...@standardnotes/api@1.26.91) (2025-06-18)
+
+**Note:** Version bump only for package @standardnotes/api
+
+## [1.26.90](https://github.com/standardnotes/app/compare/@standardnotes/api@1.26.89...@standardnotes/api@1.26.90) (2025-06-16)
+
+**Note:** Version bump only for package @standardnotes/api
+
+## [1.26.89](https://github.com/standardnotes/app/compare/@standardnotes/api@1.26.88...@standardnotes/api@1.26.89) (2024-05-07)
+
+**Note:** Version bump only for package @standardnotes/api
+
+## [1.26.88](https://github.com/standardnotes/app/compare/@standardnotes/api@1.26.87...@standardnotes/api@1.26.88) (2024-04-24)
+
+**Note:** Version bump only for package @standardnotes/api
+
+## [1.26.87](https://github.com/standardnotes/app/compare/@standardnotes/api@1.26.86...@standardnotes/api@1.26.87) (2024-04-10)
+
+**Note:** Version bump only for package @standardnotes/api
+
+## [1.26.86](https://github.com/standardnotes/app/compare/@standardnotes/api@1.26.85...@standardnotes/api@1.26.86) (2024-04-10)
+
+**Note:** Version bump only for package @standardnotes/api
+
+## [1.26.85](https://github.com/standardnotes/app/compare/@standardnotes/api@1.26.84...@standardnotes/api@1.26.85) (2024-04-08)
+
+**Note:** Version bump only for package @standardnotes/api
+
+## [1.26.84](https://github.com/standardnotes/app/compare/@standardnotes/api@1.26.83...@standardnotes/api@1.26.84) (2024-03-14)
+
+**Note:** Version bump only for package @standardnotes/api
+
+## [1.26.83](https://github.com/standardnotes/app/compare/@standardnotes/api@1.26.82...@standardnotes/api@1.26.83) (2024-03-07)
+
+### Bug Fixes
+
+* use API v0 on iOS ([#2858](https://github.com/standardnotes/app/issues/2858)) [skip e2e] ([3b2f761](https://github.com/standardnotes/app/commit/3b2f76166126a5b11f35b64aacefa37618622c3d))
+
+## [1.26.82](https://github.com/standardnotes/app/compare/@standardnotes/api@1.26.81...@standardnotes/api@1.26.82) (2024-03-05)
+
+**Note:** Version bump only for package @standardnotes/api
+
+## [1.26.81](https://github.com/standardnotes/app/compare/@standardnotes/api@1.26.80...@standardnotes/api@1.26.81) (2024-02-22)
+
+**Note:** Version bump only for package @standardnotes/api
+
+## [1.26.80](https://github.com/standardnotes/app/compare/@standardnotes/api@1.26.79...@standardnotes/api@1.26.80) (2024-02-17)
+
+**Note:** Version bump only for package @standardnotes/api
+
+## [1.26.79](https://github.com/standardnotes/app/compare/@standardnotes/api@1.26.78...@standardnotes/api@1.26.79) (2024-02-02)
+
+**Note:** Version bump only for package @standardnotes/api
+
 ## [1.26.78](https://github.com/standardnotes/app/compare/@standardnotes/api@1.26.77...@standardnotes/api@1.26.78) (2024-01-27)
 
 **Note:** Version bump only for package @standardnotes/api

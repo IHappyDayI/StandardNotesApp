@@ -2,7 +2,6 @@ import {
   UIFeature,
   CreateDecryptedLocalStorageContextPayload,
   LocalStorageDecryptedContextualPayload,
-  PrefKey,
   PrefDefaults,
   ComponentInterface,
 } from '@standardnotes/models'
@@ -12,8 +11,8 @@ import {
   StorageValueModes,
   FeatureStatus,
   PreferenceServiceInterface,
-  PreferencesServiceEvent,
   ComponentManagerInterface,
+  LocalPrefKey,
 } from '@standardnotes/services'
 import { NativeFeatureIdentifier, FindNativeTheme, ThemeFeatureDescription } from '@standardnotes/features'
 import { WebApplicationInterface } from '../WebApplication/WebApplicationInterface'
@@ -28,7 +27,9 @@ const DefaultThemeIdentifier = 'Default'
 
 export class ThemeManager extends AbstractUIService {
   private themesActiveInTheUI: ActiveThemeList
-  private lastUseDeviceThemeSettings = false
+  private lastUseDeviceThemeSettings: boolean | undefined
+  private lastAutoLightTheme: string | undefined
+  private lastAutoDarkTheme: string | undefined
 
   constructor(
     application: WebApplicationInterface,
@@ -75,56 +76,6 @@ export class ThemeManager extends AbstractUIService {
         }),
       )
     }
-
-    this.eventDisposers.push(
-      this.preferences.addEventObserver(async (event) => {
-        if (event !== PreferencesServiceEvent.PreferencesChanged) {
-          return
-        }
-
-        this.toggleTranslucentUIColors()
-
-        let hasChange = false
-
-        const { features, uuids } = this.components.getActiveThemesIdentifiers()
-
-        const featuresList = new ActiveThemeList(this.application.items, features)
-        const uuidsList = new ActiveThemeList(this.application.items, uuids)
-
-        for (const active of this.themesActiveInTheUI.getList()) {
-          if (!featuresList.has(active) && !uuidsList.has(active)) {
-            this.deactivateThemeInTheUI(active)
-            hasChange = true
-          }
-        }
-
-        for (const feature of features) {
-          if (!this.themesActiveInTheUI.has(feature)) {
-            const theme = FindNativeTheme(feature.value)
-            if (theme) {
-              const uiFeature = new UIFeature<ThemeFeatureDescription>(theme)
-              this.activateTheme(uiFeature)
-              hasChange = true
-            }
-          }
-        }
-
-        for (const uuid of uuids) {
-          if (!this.themesActiveInTheUI.has(uuid)) {
-            const theme = this.application.items.findItem<ComponentInterface>(uuid.value)
-            if (theme) {
-              const uiFeature = new UIFeature<ThemeFeatureDescription>(theme)
-              this.activateTheme(uiFeature)
-              hasChange = true
-            }
-          }
-        }
-
-        if (hasChange) {
-          this.cacheThemeState().catch(console.error)
-        }
-      }),
-    )
   }
 
   override async onAppEvent(event: ApplicationEvent) {
@@ -140,7 +91,7 @@ export class ThemeManager extends AbstractUIService {
         break
       }
       case ApplicationEvent.FeaturesAvailabilityChanged: {
-        this.handleFeaturesAvailabilityChanged()
+        this.handleFeaturesAvailabilityChanged().catch(console.error)
         break
       }
       case ApplicationEvent.Launched: {
@@ -154,15 +105,15 @@ export class ThemeManager extends AbstractUIService {
         }
         break
       }
-      case ApplicationEvent.PreferencesChanged: {
-        void this.handlePreferencesChangeEvent()
+      case ApplicationEvent.LocalPreferencesChanged: {
+        void this.handleLocalPreferencesChangeEvent()
         break
       }
     }
   }
 
   async handleMobileColorSchemeChangeEvent() {
-    const useDeviceThemeSettings = this.application.getPreference(PrefKey.UseSystemColorScheme, false)
+    const useDeviceThemeSettings = this.preferences.getLocalValue(LocalPrefKey.UseSystemColorScheme, false)
 
     if (useDeviceThemeSettings) {
       const prefersDarkColorScheme = (await this.application.mobileDevice.getColorScheme()) === 'dark'
@@ -170,18 +121,72 @@ export class ThemeManager extends AbstractUIService {
     }
   }
 
-  private async handlePreferencesChangeEvent() {
-    this.toggleTranslucentUIColors()
+  private handleThemeStateChange() {
+    let hasChange = false
 
-    const useDeviceThemeSettings = this.application.getPreference(PrefKey.UseSystemColorScheme, false)
+    const { features, uuids } = this.components.getActiveThemesIdentifiers()
 
-    const hasPreferenceChanged = useDeviceThemeSettings !== this.lastUseDeviceThemeSettings
+    const featuresList = new ActiveThemeList(this.application.items, features)
+    const uuidsList = new ActiveThemeList(this.application.items, uuids)
 
-    if (hasPreferenceChanged) {
-      this.lastUseDeviceThemeSettings = useDeviceThemeSettings
+    for (const active of this.themesActiveInTheUI.getList()) {
+      if (!featuresList.has(active) && !uuidsList.has(active)) {
+        this.deactivateThemeInTheUI(active)
+        hasChange = true
+      }
     }
 
-    if (hasPreferenceChanged && useDeviceThemeSettings) {
+    for (const feature of features) {
+      if (!this.themesActiveInTheUI.has(feature)) {
+        const theme = FindNativeTheme(feature.value)
+        if (theme) {
+          const uiFeature = new UIFeature<ThemeFeatureDescription>(theme)
+          this.activateTheme(uiFeature)
+          hasChange = true
+        }
+      }
+    }
+
+    for (const uuid of uuids) {
+      if (!this.themesActiveInTheUI.has(uuid)) {
+        const theme = this.application.items.findItem<ComponentInterface>(uuid.value)
+        if (theme) {
+          const uiFeature = new UIFeature<ThemeFeatureDescription>(theme)
+          this.activateTheme(uiFeature)
+          hasChange = true
+        }
+      }
+    }
+
+    if (hasChange) {
+      this.cacheThemeState().catch(console.error)
+    }
+  }
+
+  private async handleLocalPreferencesChangeEvent() {
+    this.handleThemeStateChange()
+
+    this.toggleTranslucentUIColors()
+
+    const useSystemColorScheme = this.preferences.getLocalValue(LocalPrefKey.UseSystemColorScheme, false)
+    const autoLightTheme = this.preferences.getLocalValue(LocalPrefKey.AutoLightThemeIdentifier, DefaultThemeIdentifier)
+    const autoDarkTheme = this.preferences.getLocalValue(
+      LocalPrefKey.AutoDarkThemeIdentifier,
+      NativeFeatureIdentifier.TYPES.DarkTheme,
+    )
+
+    const hasPreferenceChanged =
+      useSystemColorScheme !== this.lastUseDeviceThemeSettings ||
+      autoLightTheme !== this.lastAutoLightTheme ||
+      autoDarkTheme !== this.lastAutoDarkTheme
+
+    if (hasPreferenceChanged) {
+      this.lastUseDeviceThemeSettings = useSystemColorScheme
+      this.lastAutoLightTheme = autoLightTheme
+      this.lastAutoDarkTheme = autoDarkTheme
+    }
+
+    if (hasPreferenceChanged && useSystemColorScheme) {
       let prefersDarkColorScheme = window.matchMedia('(prefers-color-scheme: dark)').matches
 
       if (this.application.isNativeMobileWeb()) {
@@ -192,7 +197,7 @@ export class ThemeManager extends AbstractUIService {
     }
   }
 
-  private handleFeaturesAvailabilityChanged(): void {
+  private async handleFeaturesAvailabilityChanged() {
     let hasChange = false
 
     for (const theme of this.themesActiveInTheUI.asThemes()) {
@@ -212,24 +217,39 @@ export class ThemeManager extends AbstractUIService {
       }
     }
 
+    const shouldSetThemeAsPerColorScheme = this.preferences.getLocalValue(LocalPrefKey.UseSystemColorScheme, false)
+    if (shouldSetThemeAsPerColorScheme) {
+      let prefersDarkColorScheme = window.matchMedia('(prefers-color-scheme: dark)').matches
+      if (this.application.isNativeMobileWeb()) {
+        prefersDarkColorScheme = (await this.application.mobileDevice.getColorScheme()) === 'dark'
+      }
+      hasChange = this.setThemeAsPerColorScheme(prefersDarkColorScheme)
+    }
+
     if (hasChange) {
       void this.cacheThemeState()
     }
   }
 
   private colorSchemeEventHandler(event: MediaQueryListEvent) {
-    const shouldChangeTheme = this.application.getPreference(PrefKey.UseSystemColorScheme, false)
+    const shouldChangeTheme = this.preferences.getLocalValue(LocalPrefKey.UseSystemColorScheme, false)
 
     if (shouldChangeTheme) {
       this.setThemeAsPerColorScheme(event.matches)
     }
   }
 
-  private setThemeAsPerColorScheme(prefersDarkColorScheme: boolean) {
-    const preference = prefersDarkColorScheme ? PrefKey.AutoDarkThemeIdentifier : PrefKey.AutoLightThemeIdentifier
+  private setThemeAsPerColorScheme(prefersDarkColorScheme: boolean): boolean {
+    let didChangeTheme = false
+
+    const preference = prefersDarkColorScheme
+      ? LocalPrefKey.AutoDarkThemeIdentifier
+      : LocalPrefKey.AutoLightThemeIdentifier
 
     const preferenceDefault =
-      preference === PrefKey.AutoDarkThemeIdentifier ? NativeFeatureIdentifier.TYPES.DarkTheme : DefaultThemeIdentifier
+      preference === LocalPrefKey.AutoDarkThemeIdentifier
+        ? NativeFeatureIdentifier.TYPES.DarkTheme
+        : DefaultThemeIdentifier
 
     const usecase = new GetAllThemesUseCase(this.application.items)
     const { thirdParty, native } = usecase.execute({ excludeLayerable: false })
@@ -237,11 +257,12 @@ export class ThemeManager extends AbstractUIService {
 
     const activeTheme = themes.find((theme) => this.components.isThemeActive(theme) && !theme.layerable)
 
-    const themeIdentifier = this.preferences.getValue(preference, preferenceDefault)
+    const themeIdentifier = this.preferences.getLocalValue(preference, preferenceDefault)
 
     const toggleActiveTheme = () => {
       if (activeTheme) {
         void this.components.toggleTheme(activeTheme)
+        didChangeTheme = true
       }
     }
 
@@ -249,10 +270,17 @@ export class ThemeManager extends AbstractUIService {
       toggleActiveTheme()
     } else {
       const theme = themes.find((theme) => theme.featureIdentifier === themeIdentifier)
-      if (theme && !this.components.isThemeActive(theme)) {
-        this.components.toggleTheme(theme).catch(console.error)
+      if (theme) {
+        if (!this.components.isThemeActive(theme)) {
+          this.components.toggleTheme(theme, true).catch(console.error)
+        } else {
+          this.components.toggleOtherNonLayerableThemes(theme)
+        }
+        didChangeTheme = true
       }
     }
+
+    return didChangeTheme
   }
 
   private async activateCachedThemes() {
@@ -337,7 +365,7 @@ export class ThemeManager extends AbstractUIService {
   }
 
   private shouldUseTranslucentUI() {
-    return this.application.getPreference(PrefKey.UseTranslucentUI, PrefDefaults[PrefKey.UseTranslucentUI])
+    return this.preferences.getLocalValue(LocalPrefKey.UseTranslucentUI, PrefDefaults[LocalPrefKey.UseTranslucentUI])
   }
 
   private toggleTranslucentUIColors() {

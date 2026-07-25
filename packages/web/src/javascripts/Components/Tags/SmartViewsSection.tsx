@@ -4,7 +4,7 @@ import { FeaturesController } from '@/Controllers/FeaturesController'
 import { NavigationController } from '@/Controllers/Navigation/NavigationController'
 import { usePremiumModal } from '@/Hooks/usePremiumModal'
 import { observer } from 'mobx-react-lite'
-import { FunctionComponent, useCallback, useMemo } from 'react'
+import { FunctionComponent, useCallback, useEffect, useMemo } from 'react'
 import IconButton from '../Button/IconButton'
 import EditSmartViewModal from '../Preferences/Panes/General/SmartViews/EditSmartViewModal'
 import { EditSmartViewModalController } from '../Preferences/Panes/General/SmartViews/EditSmartViewModalController'
@@ -33,6 +33,11 @@ const SmartViewsSection: FunctionComponent<Props> = ({ application, navigationCo
     addSmartViewModalController.setIsAddingSmartView(true)
   }, [addSmartViewModalController, premiumModal, featuresController.hasSmartViews])
 
+  useEffect(
+    () => application.commands.add('create-smart-view', 'Create a new smart view', createNewSmartView, 'add'),
+    [application.commands, createNewSmartView],
+  )
+
   return (
     <section>
       <div className={'section-title-bar'}>
@@ -40,13 +45,15 @@ const SmartViewsSection: FunctionComponent<Props> = ({ application, navigationCo
           <div className="title text-base md:text-sm">
             <span className="font-bold">Views</span>
           </div>
-          <IconButton
-            focusable={true}
-            icon="add"
-            title="Create a new smart view"
-            className="p-0 text-neutral"
-            onClick={createNewSmartView}
-          />
+          {!navigationController.isSearching && (
+            <IconButton
+              focusable={true}
+              icon="add"
+              title="Create a new smart view"
+              className="p-0 text-neutral"
+              onClick={createNewSmartView}
+            />
+          )}
         </div>
       </div>
       <SmartViewsList

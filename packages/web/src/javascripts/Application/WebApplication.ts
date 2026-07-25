@@ -23,6 +23,7 @@ import {
   SNNote,
   DesktopManagerInterface,
   FileItem,
+  ApiVersion,
 } from '@standardnotes/snjs'
 import { action, computed, makeObservable, observable } from 'mobx'
 import { startAuthentication, startRegistration } from '@simplewebauthn/browser'
@@ -36,6 +37,7 @@ import {
   IsGlobalSpellcheckEnabled,
   IsMobileDevice,
   IsNativeIOS,
+  IsAndroid,
   IsNativeMobileWeb,
   KeyboardService,
   PluginsServiceInterface,
@@ -79,6 +81,8 @@ import { SearchOptionsController } from '@/Controllers/SearchOptionsController'
 import { PersistenceService } from '@/Controllers/Abstract/PersistenceService'
 import { removeFromArray } from '@standardnotes/utils'
 import { FileItemActionType } from '@/Components/AttachedFilesPopover/PopoverFileItemAction'
+import { RecentActionsState } from './Recents'
+import { CommandService } from '../Components/CommandPalette/CommandService'
 
 export type WebEventObserver = (event: WebAppEvent, data?: unknown) => void
 
@@ -94,6 +98,7 @@ export class WebApplication extends SNApplication implements WebApplicationInter
   public isSessionsModalVisible = false
 
   public devMode?: DevMode
+  public recents = new RecentActionsState()
 
   constructor(
     deviceInterface: WebOrDesktopDevice,
@@ -112,6 +117,10 @@ export class WebApplication extends SNApplication implements WebApplicationInter
       defaultHost: defaultSyncServerHost,
       appVersion: deviceInterface.appVersion,
       webSocketUrl: webSocketUrl,
+      /**
+       * iOS file:// based origin does not work with production cookies
+       */
+      apiVersion: platform === Platform.Ios || platform === Platform.Android ? ApiVersion.v0 : ApiVersion.v1,
       loadBatchSize:
         deviceInterface.environment === Environment.Mobile ? 250 : ApplicationOptionsDefaults.loadBatchSize,
       sleepBetweenBatches:
@@ -249,12 +258,20 @@ export class WebApplication extends SNApplication implements WebApplicationInter
     return this.deps.get<IsNativeIOS>(Web_TYPES.IsNativeIOS).execute().getValue()
   }
 
+  isAndroid(): boolean {
+    return this.deps.get<IsAndroid>(Web_TYPES.IsAndroid).execute().getValue()
+  }
+
+  canShowPurchaseFlow(): boolean {
+    return !this.isAndroid()
+  }
+
   get isMobileDevice(): boolean {
     return this.deps.get<IsMobileDevice>(Web_TYPES.IsMobileDevice).execute().getValue()
   }
 
   get hideOutboundSubscriptionLinks() {
-    return this.isNativeIOS()
+    return this.isNativeIOS() || this.isAndroid()
   }
 
   get mobileDevice(): MobileDeviceInterface {
@@ -352,8 +369,8 @@ export class WebApplication extends SNApplication implements WebApplicationInter
     this.notifyWebEvent(WebAppEvent.MobileKeyboardWillChangeFrame, frame)
   }
 
-  handleMobileKeyboardDidChangeFrameEvent(frame: { height: number; contentHeight: number }): void {
-    this.notifyWebEvent(WebAppEvent.MobileKeyboardDidChangeFrame, frame)
+  handleMobileKeyboardDidHideEvent(): void {
+    setCustomViewportHeight(100, 'vh', true)
   }
 
   handleOpenFilePreviewEvent({ id }: { id: string }): void {
@@ -590,6 +607,10 @@ export class WebApplication extends SNApplication implements WebApplicationInter
 
   get keyboardService(): KeyboardService {
     return this.deps.get<KeyboardService>(Web_TYPES.KeyboardService)
+  }
+
+  get commands(): CommandService {
+    return this.deps.get<CommandService>(Web_TYPES.CommandService)
   }
 
   get featuresController(): FeaturesController {

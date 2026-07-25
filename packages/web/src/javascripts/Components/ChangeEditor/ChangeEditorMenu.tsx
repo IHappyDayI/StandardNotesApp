@@ -10,9 +10,9 @@ import {
   IframeComponentFeatureDescription,
   NoteMutator,
   NoteType,
-  PrefKey,
   SNNote,
   ContentType,
+  LocalPrefKey,
 } from '@standardnotes/snjs'
 import { FunctionComponent, useCallback, useEffect, useState } from 'react'
 import { EditorMenuGroup } from '@/Components/NotesOptions/EditorMenuGroup'
@@ -131,7 +131,7 @@ const ChangeEditorMenu: FunctionComponent<ChangeEditorMenuProps> = ({
       setCurrentFeature(application.componentManager.editorForNote(note))
 
       if (uiFeature.featureIdentifier === NativeFeatureIdentifier.TYPES.PlainEditor) {
-        reloadFont(application.getPreference(PrefKey.EditorMonospaceEnabled))
+        reloadFont(application.preferences.getLocalValue(LocalPrefKey.EditorMonospaceEnabled))
       }
     },
     [application],
@@ -301,7 +301,7 @@ const ChangeEditorMenu: FunctionComponent<ChangeEditorMenuProps> = ({
                           {menuItem.uiFeature.featureIdentifier === NativeFeatureIdentifier.TYPES.SuperEditor &&
                             !isSelected(menuItem) &&
                             recommendSuper && (
-                              <Pill className="px-1.5 py-0.5 text-[9px]" style="info">
+                              <Pill className="px-1.5 py-0.5 text-[0.5625rem]" style="info">
                                 Recommended
                               </Pill>
                             )}

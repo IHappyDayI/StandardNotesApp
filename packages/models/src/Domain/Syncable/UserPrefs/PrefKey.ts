@@ -12,12 +12,8 @@ export enum PrefKey {
   NotesPanelWidth = 'notesPanelWidth',
   EditorWidth = 'editorWidth',
   EditorLeft = 'editorLeft',
-  EditorMonospaceEnabled = 'monospaceFont',
   EditorSpellcheck = 'spellcheck',
   EditorResizersEnabled = 'marginResizersEnabled',
-  EditorLineHeight = 'editorLineHeight',
-  EditorLineWidth = 'editorLineWidth',
-  EditorFontSize = 'editorFontSize',
   SortNotesBy = 'sortBy',
   SortNotesReverse = 'sortReverse',
   NotesShowArchived = 'showArchived',
@@ -28,10 +24,6 @@ export enum PrefKey {
   NotesHideDate = 'hideDate',
   NotesHideTags = 'hideTags',
   NotesHideEditorIcon = 'hideEditorIcon',
-  UseSystemColorScheme = 'useSystemColorScheme',
-  UseTranslucentUI = 'useTranslucentUI',
-  AutoLightThemeIdentifier = 'autoLightThemeIdentifier',
-  AutoDarkThemeIdentifier = 'autoDarkThemeIdentifier',
   NoteAddToParentFolders = 'noteAddToParentFolders',
   NewNoteTitleFormat = 'newNoteTitleFormat',
   CustomNoteTitleFormat = 'customNoteTitleFormat',
@@ -44,15 +36,24 @@ export enum PrefKey {
   SuperNoteExportEmbedBehavior = 'superNoteExportEmbedBehavior',
   SuperNoteExportUseMDFrontmatter = 'superNoteExportUseMDFrontmatter',
   SuperNoteExportPDFPageSize = 'superNoteExportPDFPageSize',
+  SuperNoteImageAlignment = 'superNoteImageAlignment',
   AuthenticatorNames = 'authenticatorNames',
   PaneGesturesEnabled = 'paneGesturesEnabled',
   ComponentPreferences = 'componentPreferences',
-  ActiveThemes = 'activeThemes',
   ActiveComponents = 'activeComponents',
   AlwaysShowSuperToolbar = 'alwaysShowSuperToolbar',
   AddImportsToTag = 'addImportsToTag',
   AlwaysCreateNewTagForImports = 'alwaysCreateNewTagForImports',
   ExistingTagForImports = 'existingTagForImports',
+  DEPRECATED_ActiveThemes = 'activeThemes',
+  DEPRECATED_UseSystemColorScheme = 'useSystemColorScheme',
+  DEPRECATED_UseTranslucentUI = 'useTranslucentUI',
+  DEPRECATED_AutoLightThemeIdentifier = 'autoLightThemeIdentifier',
+  DEPRECATED_AutoDarkThemeIdentifier = 'autoDarkThemeIdentifier',
+  DEPRECATED_EditorMonospaceEnabled = 'monospaceFont',
+  DEPRECATED_EditorLineHeight = 'editorLineHeight',
+  DEPRECATED_EditorLineWidth = 'editorLineWidth',
+  DEPRECATED_EditorFontSize = 'editorFontSize',
 }
 
 export type PrefValue = {
@@ -60,7 +61,6 @@ export type PrefValue = {
   [PrefKey.NotesPanelWidth]: number
   [PrefKey.EditorWidth]: number | null
   [PrefKey.EditorLeft]: number | null
-  [PrefKey.EditorMonospaceEnabled]: boolean
   [PrefKey.EditorSpellcheck]: boolean
   [PrefKey.EditorResizersEnabled]: boolean
   [PrefKey.SortNotesBy]: CollectionSortProperty
@@ -73,16 +73,18 @@ export type PrefValue = {
   [PrefKey.NotesHideDate]: boolean
   [PrefKey.NotesHideTags]: boolean
   [PrefKey.NotesHideEditorIcon]: boolean
-  [PrefKey.UseSystemColorScheme]: boolean
-  [PrefKey.UseTranslucentUI]: boolean
-  [PrefKey.AutoLightThemeIdentifier]: string
-  [PrefKey.AutoDarkThemeIdentifier]: string
+  [PrefKey.DEPRECATED_ActiveThemes]: string[]
+  [PrefKey.DEPRECATED_UseSystemColorScheme]: boolean
+  [PrefKey.DEPRECATED_UseTranslucentUI]: boolean
+  [PrefKey.DEPRECATED_AutoLightThemeIdentifier]: string
+  [PrefKey.DEPRECATED_AutoDarkThemeIdentifier]: string
   [PrefKey.NoteAddToParentFolders]: boolean
   [PrefKey.NewNoteTitleFormat]: NewNoteTitleFormat
   [PrefKey.CustomNoteTitleFormat]: string
-  [PrefKey.EditorLineHeight]: EditorLineHeight
-  [PrefKey.EditorLineWidth]: EditorLineWidth
-  [PrefKey.EditorFontSize]: EditorFontSize
+  [PrefKey.DEPRECATED_EditorMonospaceEnabled]: boolean
+  [PrefKey.DEPRECATED_EditorLineHeight]: EditorLineHeight
+  [PrefKey.DEPRECATED_EditorLineWidth]: EditorLineWidth
+  [PrefKey.DEPRECATED_EditorFontSize]: EditorFontSize
   [PrefKey.UpdateSavingStatusIndicator]: boolean
   [PrefKey.DefaultEditorIdentifier]: string
   [PrefKey.MomentsDefaultTagUuid]: string | undefined
@@ -95,10 +97,10 @@ export type PrefValue = {
   [PrefKey.AuthenticatorNames]: string
   [PrefKey.PaneGesturesEnabled]: boolean
   [PrefKey.ComponentPreferences]: AllComponentPreferences
-  [PrefKey.ActiveThemes]: string[]
   [PrefKey.ActiveComponents]: string[]
   [PrefKey.AlwaysShowSuperToolbar]: boolean
   [PrefKey.AddImportsToTag]: boolean
   [PrefKey.AlwaysCreateNewTagForImports]: boolean
   [PrefKey.ExistingTagForImports]: string | undefined
+  [PrefKey.SuperNoteImageAlignment]: 'left' | 'center' | 'right'
 }

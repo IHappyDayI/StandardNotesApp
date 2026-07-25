@@ -1,6 +1,11 @@
 {
   "name": "@standardnotes/snjs",
-  "version": "2.206.0",
+  "version": "2.211.8",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/standardnotes/app",
+    "directory": "packages/snjs"
+  },
   "engines": {
     "node": ">=16.0.0 <17.0.0"
   },
@@ -12,6 +17,7 @@
     "mocha",
     "e2e-server.js"
   ],
+  "bin": "e2e-server.js",
   "license": "AGPL-3.0",
   "publishConfig": {
     "access": "public"
@@ -82,5 +88,9 @@
     "webpack": "*",
     "webpack-cli": "*",
     "webpack-merge": "*"
+  },
+  "dependencies": {
+    "connect": "^3.7.0",
+    "serve-static": "^1.15.0"
   }
 }

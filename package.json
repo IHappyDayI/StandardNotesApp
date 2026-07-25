@@ -2,7 +2,7 @@
   "name": "@standardnotes/app-monorepo",
   "version": "0.0.1",
   "private": true,
-  "author": "Standard Notes.",
+  "author": "Standard Notes",
   "repository": {
     "type": "git",
     "url": "git://github.com/standardnotes/app"
@@ -31,7 +31,7 @@
     "e2e:test": "yarn dlx mocha-headless-chrome --timeout 3600000 -f http://localhost:9001/mocha/test.html",
     "reset": "find . -type dir -name node_modules | xargs rm -rf && rm -rf yarn.lock && yarn install",
     "release:prod": "lerna version --conventional-commits --yes -m \"chore(release): publish\"",
-    "publish:prod": "lerna publish from-git --yes --no-verify-access --loglevel verbose",
+    "publish:prod": "lerna publish from-git --yes --loglevel verbose --registry https://registry.npmjs.org",
     "version": "yarn install --no-immutable && git add yarn.lock && yarn changelog:json",
     "changelog:json": "node scripts/ChangelogToJson.js && git add .",
     "postversion": "./scripts/push-tags-one-by-one.sh",
@@ -44,9 +44,7 @@
     "@types/react-native-vector-icons/@types/react": "17.0.2",
     "@types/react-native/@types/react": "17.0.2",
     "@types/hoist-non-react-statics/@types/react": "17.0.2",
-    "lexical@0.13.1": "patch:lexical@npm:0.13.1#.yarn/patches/lexical-npm-0.13.1-ac06219fd6.patch",
-    "@lexical/clipboard@0.13.1": "patch:@lexical/clipboard@npm:0.13.1#.yarn/patches/@lexical-clipboard-npm-0.13.1-b4788bb0a9.patch",
-    "@lexical/rich-text@0.13.1": "patch:@lexical/rich-text@npm:0.13.1#.yarn/patches/@lexical-rich-text-npm-0.13.1-df610fad54.patch"
+    "node-abi": "^4.2.0"
   },
   "dependencies": {
     "@standardnotes/snjs": "workspace:*"
@@ -56,9 +54,11 @@
     "@babel/preset-env": "^7.22.9",
     "@commitlint/cli": "^17.6.7",
     "@commitlint/config-conventional": "^17.6.7",
-    "@lerna-lite/cli": "^1.12.0",
-    "@lerna-lite/list": "^1.12.0",
-    "@lerna-lite/run": "^1.12.0",
+    "@lerna-lite/cli": "^4.10.5",
+    "@lerna-lite/list": "^4.10.5",
+    "@lerna-lite/publish": "^4.10.5",
+    "@lerna-lite/run": "^4.10.5",
+    "@lerna-lite/version": "^4.10.5",
     "@standardnotes/config": "^2.4.3",
     "@typescript-eslint/eslint-plugin": "^6.2.0",
     "@typescript-eslint/parser": "^6.2.0",
@@ -70,7 +70,7 @@
     "npm-check-updates": "^16.10.17",
     "prettier": "3.0.0",
     "sass-loader": "^13.3.2",
-    "typescript": "5.2.2",
+    "typescript": "5.8.3",
     "webpack": "^5.88.2",
     "webpack-cli": "^5.1.4",
     "webpack-dev-server": "^4.15.1",

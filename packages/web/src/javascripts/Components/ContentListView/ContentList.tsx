@@ -9,6 +9,7 @@ import { ElementIds } from '@/Constants/ElementIDs'
 import { classNames } from '@standardnotes/utils'
 import { SNTag } from '@standardnotes/snjs'
 import { ItemListController } from '@/Controllers/ItemList/ItemListController'
+import { useMediaQuery, MutuallyExclusiveMediaQueryBreakpoints } from '@/Hooks/useMediaQuery'
 
 type Props = {
   application: WebApplication
@@ -24,6 +25,8 @@ const ContentList: FunctionComponent<Props> = ({ application, items, selectedUui
   const { hideTags, hideDate, hideNotePreview, hideEditorIcon } = itemListController.webDisplayOptions
   const { sortBy } = itemListController.displayOptions
   const selectedTag = navigationController.selected
+
+  const isMobileScreen = useMediaQuery(MutuallyExclusiveMediaQueryBreakpoints.sm)
 
   const onScroll: UIEventHandler = useCallback(
     (e) => {
@@ -82,8 +85,9 @@ const ContentList: FunctionComponent<Props> = ({ application, items, selectedUui
     <div
       className={classNames(
         'infinite-scroll overflow-y-auto overflow-x-hidden focus:shadow-none focus:outline-none',
-        'md:max-h-full md:overflow-y-hidden md:hover:overflow-y-auto pointer-coarse:md:overflow-y-auto',
-        'flex-grow pb-2 md:hover:[overflow-y:_overlay]',
+        'md:max-h-full pointer-coarse:md:overflow-y-auto',
+        'flex-grow',
+        isMobileScreen ? !itemListController.isMultipleSelectionMode && 'pb-safe-bottom' : 'pb-2',
       )}
       id={ElementIds.ContentList}
       onScroll={onScroll}

@@ -31,10 +31,12 @@ import {
   CHANGE_EDITOR_WIDTH_COMMAND,
   SUPER_TOGGLE_TOOLBAR,
   TOGGLE_KEYBOARD_SHORTCUTS_MODAL,
+  TOGGLE_COMMAND_PALETTE,
 } from './KeyboardCommands'
 import { KeyboardKey } from './KeyboardKey'
 import { KeyboardModifier, getPrimaryModifier } from './KeyboardModifier'
 import { KeyboardShortcut } from './KeyboardShortcut'
+import { isMacPlatform } from './platformCheck'
 
 export function getKeyboardShortcuts(platform: Platform, _environment: Environment): KeyboardShortcut[] {
   const primaryModifier = getPrimaryModifier(platform)
@@ -107,7 +109,7 @@ export function getKeyboardShortcuts(platform: Platform, _environment: Environme
     },
     {
       command: CHANGE_EDITOR_COMMAND,
-      key: '/',
+      key: '?',
       modifiers: [primaryModifier, KeyboardModifier.Shift],
       preventDefault: true,
     },
@@ -158,8 +160,9 @@ export function getKeyboardShortcuts(platform: Platform, _environment: Environme
     },
     {
       command: SUPER_SEARCH_TOGGLE_REPLACE_MODE,
-      key: 'h',
-      modifiers: [primaryModifier],
+      key: isMacPlatform(platform) ? undefined : 'h',
+      code: isMacPlatform(platform) ? 'KeyF' : undefined,
+      modifiers: isMacPlatform(platform) ? [KeyboardModifier.Alt, primaryModifier] : [primaryModifier],
     },
     {
       command: SUPER_SEARCH_TOGGLE_CASE_SENSITIVE,
@@ -197,6 +200,11 @@ export function getKeyboardShortcuts(platform: Platform, _environment: Environme
       command: TOGGLE_KEYBOARD_SHORTCUTS_MODAL,
       key: '/',
       modifiers: [primaryModifier],
+    },
+    {
+      command: TOGGLE_COMMAND_PALETTE,
+      code: 'Semicolon',
+      modifiers: [primaryModifier, KeyboardModifier.Shift],
     },
   ]
 }

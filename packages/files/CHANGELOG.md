@@ -3,6 +3,82 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.20.18](https://github.com/standardnotes/app/compare/@standardnotes/files@1.20.17...@standardnotes/files@1.20.18) (2026-07-18)
+
+**Note:** Version bump only for package @standardnotes/files
+
+## [1.20.17](https://github.com/standardnotes/app/compare/@standardnotes/files@1.20.16...@standardnotes/files@1.20.17) (2026-04-24)
+
+**Note:** Version bump only for package @standardnotes/files
+
+## [1.20.16](https://github.com/standardnotes/app/compare/@standardnotes/files@1.20.15...@standardnotes/files@1.20.16) (2025-12-18)
+
+### Bug Fixes
+
+* Shows informative error on UI when file upload limit is reached ([#2961](https://github.com/standardnotes/app/issues/2961)) ([844b7a7](https://github.com/standardnotes/app/commit/844b7a7a2b26bd4e74c2d8d36ddfa9e28b47f589))
+
+## [1.20.15](https://github.com/standardnotes/app/compare/@standardnotes/files@1.20.14...@standardnotes/files@1.20.15) (2025-11-06)
+
+**Note:** Version bump only for package @standardnotes/files
+
+## [1.20.14](https://github.com/standardnotes/app/compare/@standardnotes/files@1.20.13...@standardnotes/files@1.20.14) (2025-07-15)
+
+**Note:** Version bump only for package @standardnotes/files
+
+## [1.20.13](https://github.com/standardnotes/app/compare/@standardnotes/files@1.20.12...@standardnotes/files@1.20.13) (2025-06-24)
+
+**Note:** Version bump only for package @standardnotes/files
+
+## [1.20.12](https://github.com/standardnotes/app/compare/@standardnotes/files@1.20.11...@standardnotes/files@1.20.12) (2025-06-18)
+
+**Note:** Version bump only for package @standardnotes/files
+
+## [1.20.11](https://github.com/standardnotes/app/compare/@standardnotes/files@1.20.10...@standardnotes/files@1.20.11) (2025-06-16)
+
+**Note:** Version bump only for package @standardnotes/files
+
+## [1.20.10](https://github.com/standardnotes/app/compare/@standardnotes/files@1.20.9...@standardnotes/files@1.20.10) (2024-05-07)
+
+**Note:** Version bump only for package @standardnotes/files
+
+## [1.20.9](https://github.com/standardnotes/app/compare/@standardnotes/files@1.20.8...@standardnotes/files@1.20.9) (2024-05-06)
+
+**Note:** Version bump only for package @standardnotes/files
+
+## [1.20.8](https://github.com/standardnotes/app/compare/@standardnotes/files@1.20.7...@standardnotes/files@1.20.8) (2024-04-24)
+
+**Note:** Version bump only for package @standardnotes/files
+
+## [1.20.7](https://github.com/standardnotes/app/compare/@standardnotes/files@1.20.6...@standardnotes/files@1.20.7) (2024-04-20)
+
+**Note:** Version bump only for package @standardnotes/files
+
+## [1.20.6](https://github.com/standardnotes/app/compare/@standardnotes/files@1.20.5...@standardnotes/files@1.20.6) (2024-04-19)
+
+### Bug Fixes
+
+* Fixed issue with some Evernote imports getting cut-off ([2bc7d57](https://github.com/standardnotes/app/commit/2bc7d572356b285160cf5b811e6b38064f4f7f1b))
+
+## [1.20.5](https://github.com/standardnotes/app/compare/@standardnotes/files@1.20.4...@standardnotes/files@1.20.5) (2024-04-10)
+
+**Note:** Version bump only for package @standardnotes/files
+
+## [1.20.4](https://github.com/standardnotes/app/compare/@standardnotes/files@1.20.3...@standardnotes/files@1.20.4) (2024-04-10)
+
+**Note:** Version bump only for package @standardnotes/files
+
+## [1.20.3](https://github.com/standardnotes/app/compare/@standardnotes/files@1.20.2...@standardnotes/files@1.20.3) (2024-04-08)
+
+**Note:** Version bump only for package @standardnotes/files
+
+## [1.20.2](https://github.com/standardnotes/app/compare/@standardnotes/files@1.20.1...@standardnotes/files@1.20.2) (2024-02-17)
+
+**Note:** Version bump only for package @standardnotes/files
+
+## [1.20.1](https://github.com/standardnotes/app/compare/@standardnotes/files@1.20.0...@standardnotes/files@1.20.1) (2024-02-02)
+
+**Note:** Version bump only for package @standardnotes/files
+
 # [1.20.0](https://github.com/standardnotes/app/compare/@standardnotes/files@1.19.0...@standardnotes/files@1.20.0) (2024-01-27)
 
 ### Features

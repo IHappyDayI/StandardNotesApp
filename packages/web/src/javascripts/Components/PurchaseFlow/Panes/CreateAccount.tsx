@@ -2,10 +2,14 @@ import Button from '@/Components/Button/Button'
 import { WebApplication } from '@/Application/WebApplication'
 import { PurchaseFlowPane } from '@/Controllers/PurchaseFlow/PurchaseFlowPane'
 import { observer } from 'mobx-react-lite'
-import { ChangeEventHandler, FunctionComponent, useEffect, useRef, useState } from 'react'
+import { ChangeEventHandler, FunctionComponent, useCallback, useEffect, useRef, useState } from 'react'
 import FloatingLabelInput from '@/Components/Input/FloatingLabelInput'
 import { isEmailValid } from '@/Utils'
 import { BlueDotIcon, CircleIcon, DiamondIcon, CreateAccountIllustration } from '@standardnotes/icons'
+import { useCaptcha } from '@/Hooks/useCaptcha'
+import { AccountMenuPane } from '../../AccountMenu/AccountMenuPane'
+import { isErrorResponse } from '@standardnotes/snjs'
+import { c } from 'ttag'
 
 type Props = {
   application: WebApplication
@@ -19,6 +23,62 @@ const CreateAccount: FunctionComponent<Props> = ({ application }) => {
   const [isCreatingAccount, setIsCreatingAccount] = useState(false)
   const [isEmailInvalid, setIsEmailInvalid] = useState(false)
   const [isPasswordNotMatching, setIsPasswordNotMatching] = useState(false)
+
+  const [hvmToken, setHVMToken] = useState('')
+  const [captchaURL, setCaptchaURL] = useState('')
+
+  const register = useCallback(() => {
+    setIsCreatingAccount(true)
+    application
+      .register(email, password, hvmToken)
+      .then(() => {
+        application.accountMenuController.closeAccountMenu()
+        application.accountMenuController.setCurrentPane(AccountMenuPane.GeneralMenu)
+        application.purchaseFlowController.closePurchaseFlow()
+      })
+      .catch((err) => {
+        console.error(err)
+        application.alerts.alert(err as string).catch(console.error)
+      })
+      .finally(() => {
+        setIsCreatingAccount(false)
+      })
+  }, [application, email, hvmToken, password])
+
+  const captchaIframe = useCaptcha(captchaURL, (token) => {
+    setHVMToken(token)
+    setCaptchaURL('')
+  })
+
+  useEffect(() => {
+    if (!hvmToken) {
+      return
+    }
+
+    register()
+  }, [hvmToken, register])
+
+  const checkIfCaptchaRequiredAndRegister = useCallback(() => {
+    application
+      .getCaptchaUrl()
+      .then((response) => {
+        if (isErrorResponse(response)) {
+          throw new Error()
+        }
+        const { captchaUIUrl } = response.data
+        if (captchaUIUrl) {
+          setCaptchaURL(captchaUIUrl)
+        } else {
+          setCaptchaURL('')
+          register()
+        }
+      })
+      .catch((error) => {
+        console.error(error)
+        setCaptchaURL('')
+        register()
+      })
+  }, [application, register])
 
   const emailInputRef = useRef<HTMLInputElement>(null)
   const passwordInputRef = useRef<HTMLInputElement>(null)
@@ -81,20 +141,51 @@ const CreateAccount: FunctionComponent<Props> = ({ application }) => {
       return
     }
 
-    setIsCreatingAccount(true)
-
-    try {
-      await application.register(email, password)
-
-      application.purchaseFlowController.closePurchaseFlow()
-      void application.purchaseFlowController.openPurchaseFlow()
-    } catch (err) {
-      console.error(err)
-      application.alerts.alert(err as string).catch(console.error)
-    } finally {
-      setIsCreatingAccount(false)
-    }
+    checkIfCaptchaRequiredAndRegister()
   }
+
+  const CreateAccountForm = (
+    <form onSubmit={handleCreateAccount}>
+      <div className="flex flex-col">
+        <FloatingLabelInput
+          className={`min-w-auto md:min-w-90 ${isEmailInvalid ? 'mb-2' : 'mb-4'}`}
+          id="purchase-sign-in-email"
+          type="email"
+          label={c('B1.Account.SignIn.Label').t`Email`}
+          value={email}
+          onChange={handleEmailChange}
+          ref={emailInputRef}
+          disabled={isCreatingAccount}
+          isInvalid={isEmailInvalid}
+        />
+        {isEmailInvalid ? <div className="mb-4 text-danger">{c('B1.Account.SignIn.Error').t`Please provide a valid email.`}</div> : null}
+        <FloatingLabelInput
+          className="min-w-auto mb-4 md:min-w-90"
+          id="purchase-create-account-password"
+          type="password"
+          label={c('B1.Account.SignIn.Label').t`Password`}
+          value={password}
+          onChange={handlePasswordChange}
+          ref={passwordInputRef}
+          disabled={isCreatingAccount}
+        />
+        <FloatingLabelInput
+          className={`min-w-auto md:min-w-90 ${isPasswordNotMatching ? 'mb-2' : 'mb-4'}`}
+          id="create-account-confirm"
+          type="password"
+          label={c('B1.Account.SignIn.Label').t`Repeat password`}
+          value={confirmPassword}
+          onChange={handleConfirmPasswordChange}
+          ref={confirmPasswordInputRef}
+          disabled={isCreatingAccount}
+          isInvalid={isPasswordNotMatching}
+        />
+        {isPasswordNotMatching ? (
+          <div className="mb-4 text-danger">{c('B1.Account.SignIn.Error').t`Passwords don't match. Please try again.`}</div>
+        ) : null}
+      </div>
+    </form>
+  )
 
   return (
     <div className="flex items-center">
@@ -107,48 +198,15 @@ const CreateAccount: FunctionComponent<Props> = ({ application }) => {
       <DiamondIcon className="absolute -right-2 top-0 -z-[1] h-18 w-18 translate-x-1/2" />
 
       <div className="mr-0 lg:mr-12">
-        <h1 className="mb-2 mt-0 text-2xl font-bold">Create your free account</h1>
-        <div className="mb-4 text-sm font-medium">to continue to Standard Notes.</div>
-        <form onSubmit={handleCreateAccount}>
-          <div className="flex flex-col">
-            <FloatingLabelInput
-              className={`min-w-auto md:min-w-90 ${isEmailInvalid ? 'mb-2' : 'mb-4'}`}
-              id="purchase-sign-in-email"
-              type="email"
-              label="Email"
-              value={email}
-              onChange={handleEmailChange}
-              ref={emailInputRef}
-              disabled={isCreatingAccount}
-              isInvalid={isEmailInvalid}
-            />
-            {isEmailInvalid ? <div className="mb-4 text-danger">Please provide a valid email.</div> : null}
-            <FloatingLabelInput
-              className="min-w-auto mb-4 md:min-w-90"
-              id="purchase-create-account-password"
-              type="password"
-              label="Password"
-              value={password}
-              onChange={handlePasswordChange}
-              ref={passwordInputRef}
-              disabled={isCreatingAccount}
-            />
-            <FloatingLabelInput
-              className={`min-w-auto md:min-w-90 ${isPasswordNotMatching ? 'mb-2' : 'mb-4'}`}
-              id="create-account-confirm"
-              type="password"
-              label="Repeat password"
-              value={confirmPassword}
-              onChange={handleConfirmPasswordChange}
-              ref={confirmPasswordInputRef}
-              disabled={isCreatingAccount}
-              isInvalid={isPasswordNotMatching}
-            />
-            {isPasswordNotMatching ? (
-              <div className="mb-4 text-danger">Passwords don't match. Please try again.</div>
-            ) : null}
-          </div>
-        </form>
+        {
+          // translator: Full sentence: "Create your free account"
+          <h1 className="mb-2 mt-0 text-2xl font-bold">{c('B1.Account.SignIn.Title').t`Create your free account`}</h1>
+        }
+        {
+          // translator: Full sentence: "Create your free account to continue to Standard Notes."
+          <div className="mb-4 text-sm font-medium">{c('B1.Account.SignIn.Info').t`to continue to Standard Notes.`}</div>
+        }
+        {captchaURL ? captchaIframe : CreateAccountForm}
         <div className="flex flex-col-reverse items-start justify-between md:flex-row md:items-center">
           <div className="flex flex-col">
             <button
@@ -156,7 +214,10 @@ const CreateAccount: FunctionComponent<Props> = ({ application }) => {
               disabled={isCreatingAccount}
               className="mb-2 flex cursor-pointer items-start border-0 bg-default p-0 font-medium text-info hover:underline"
             >
-              Sign in instead
+              {
+                // translator: "Instead" here refers to "instead of creating an account"
+                c('B1.Account.SignIn.Action').t`Sign in instead`
+              }
             </button>
             {!application.isNativeIOS() && (
               <button
@@ -164,14 +225,14 @@ const CreateAccount: FunctionComponent<Props> = ({ application }) => {
                 disabled={isCreatingAccount}
                 className="flex cursor-pointer items-start border-0 bg-default p-0 font-medium text-info hover:underline"
               >
-                Subscribe without account
+                {c('B1.Account.SignIn.Action').t`Subscribe without account`}
               </button>
             )}
           </div>
           <Button
             className="mb-4 py-2.5 md:mb-0"
             primary
-            label={isCreatingAccount ? 'Creating account...' : 'Create account'}
+            label={isCreatingAccount ? c('B1.Account.SignIn.Action').t`Creating account...` : c('B1.Account.SignIn.Action').t`Create account`}
             onClick={handleCreateAccount}
             disabled={isCreatingAccount}
           />

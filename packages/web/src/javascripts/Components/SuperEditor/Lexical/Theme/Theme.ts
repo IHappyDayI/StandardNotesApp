@@ -38,7 +38,7 @@ const BlocksEditorTheme: EditorThemeClasses = {
   },
   embedBlock: {
     base: 'Lexical__embedBlock',
-    focus: 'Lexical__embedBlockFocus',
+    focus: 'embedBlockFocused',
   },
   hashtag: 'Lexical__hashtag',
   heading: {
@@ -82,6 +82,7 @@ const BlocksEditorTheme: EditorThemeClasses = {
   tableCellSortedIndicator: 'Lexical__tableCellSortedIndicator',
   tableResizeRuler: 'Lexical__tableCellResizeRuler',
   tableSelected: 'Lexical__tableSelected',
+  tableSelection: 'Lexical__tableSelection',
   text: {
     bold: 'Lexical__textBold',
     code: 'Lexical__textCode',

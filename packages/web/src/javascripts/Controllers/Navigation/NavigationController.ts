@@ -1,12 +1,11 @@
 import {
   confirmDialog,
   CREATE_NEW_TAG_COMMAND,
-  KeyboardService,
   NavigationControllerPersistableValue,
   VaultDisplayService,
   VaultDisplayServiceEvent,
 } from '@standardnotes/ui-services'
-import { STRING_DELETE_TAG } from '@/Constants/Strings'
+import { STRING_DELETE_TAG, StringUtils } from '@/Constants/Strings'
 import { SMART_TAGS_FEATURE_NAME } from '@/Constants/Constants'
 import {
   ContentType,
@@ -33,7 +32,7 @@ import {
 } from '@standardnotes/snjs'
 import { action, computed, makeObservable, observable, reaction, runInAction } from 'mobx'
 import { FeaturesController } from '../FeaturesController'
-import { destroyAllObjectProperties } from '@/Utils'
+import { debounce, destroyAllObjectProperties } from '@/Utils'
 import { isValidFutureSiblings, rootTags, tagSiblings } from './Utils'
 import { AnyTag } from './AnyTagType'
 import { CrossControllerEvent } from '../CrossControllerEvent'
@@ -43,6 +42,8 @@ import { TagListSectionType } from '@/Components/Tags/TagListSection'
 import { PaneLayout } from '../PaneController/PaneLayout'
 import { TagsCountsState } from './TagsCountsState'
 import { PaneController } from '../PaneController/PaneController'
+import { RecentActionsState } from '../../Application/Recents'
+import { CommandService } from '../../Components/CommandPalette/CommandService'
 
 export class NavigationController
   extends AbstractViewController
@@ -59,18 +60,21 @@ export class NavigationController
   previouslySelected_: AnyTag | undefined = undefined
   editing_: SNTag | SmartView | undefined = undefined
   addingSubtagTo: SNTag | undefined = undefined
+  tagToScrollIntoView: AnyTag | undefined = undefined
 
   contextMenuOpen = false
   contextMenuClickLocation: { x: number; y: number } = { x: 0, y: 0 }
   contextMenuTag: SNTag | undefined = undefined
   contextMenuTagSection: TagListSectionType | undefined = undefined
 
+  searchQuery = ''
+
   private readonly tagsCountsState: TagsCountsState
 
   constructor(
     private featuresController: FeaturesController,
     private vaultDisplayService: VaultDisplayService,
-    private keyboardService: KeyboardService,
+    private commands: CommandService,
     private paneController: PaneController,
     private sync: SyncServiceInterface,
     private mutator: MutatorClientInterface,
@@ -78,6 +82,7 @@ export class NavigationController
     private preferences: PreferenceServiceInterface,
     private alerts: AlertService,
     private _changeAndSaveItem: ChangeAndSaveItem,
+    private recents: RecentActionsState,
     eventBus: InternalEventBusInterface,
   ) {
     super(eventBus)
@@ -130,11 +135,18 @@ export class NavigationController
       isInFilesView: computed,
 
       hydrateFromPersistedValue: action,
+
+      searchQuery: observable,
+      setSearchQuery: action,
     })
 
     this.disposers.push(
       this.items.streamItems([ContentType.TYPES.Tag, ContentType.TYPES.SmartView], ({ changed, removed }) => {
         this.reloadTags()
+
+        if (this.contextMenuTag && FindItem(removed, this.contextMenuTag.uuid)) {
+          this.setContextMenuTag(undefined)
+        }
 
         runInAction(() => {
           const currentSelectedTag = this.selected_
@@ -187,22 +199,28 @@ export class NavigationController
     )
 
     this.disposers.push(
-      this.keyboardService.addCommandHandler({
-        command: CREATE_NEW_TAG_COMMAND,
-        category: 'General',
-        description: 'Create new tag',
-        onKeyDown: () => {
-          this.createNewTemplate()
-        },
-      }),
+      this.commands.addWithShortcut(
+        CREATE_NEW_TAG_COMMAND,
+        'General',
+        'Create new tag',
+        () => this.createNewTemplate(),
+        'add',
+      ),
     )
+
+    this.setDisplayOptionsAndReloadTags = debounce(this.setDisplayOptionsAndReloadTags, 50)
   }
 
   private reloadTags(): void {
     runInAction(() => {
       this.tags = this.items.getDisplayableTags()
       this.starredTags = this.tags.filter((tag) => tag.starred)
-      this.smartViews = this.items.getSmartViews()
+      this.smartViews = this.items.getSmartViews().filter((view) => {
+        if (!this.isSearching) {
+          return true
+        }
+        return !isSystemView(view)
+      })
     })
   }
 
@@ -374,6 +392,10 @@ export class NavigationController
       return []
     }
 
+    if (this.isSearching) {
+      return []
+    }
+
     const children = this.items.getTagChildren(tag)
 
     const childrenUuids = children.map((childTag) => childTag.uuid)
@@ -463,8 +485,9 @@ export class NavigationController
   public async setSelectedTag(
     tag: AnyTag | undefined,
     location: TagListSectionType,
-    { userTriggered } = { userTriggered: false },
+    options?: { userTriggered: boolean; scrollIntoView?: boolean },
   ) {
+    const { userTriggered = false, scrollIntoView = false } = options || {}
     if (tag && tag.conflictOf) {
       this._changeAndSaveItem
         .execute(tag, (mutator) => {
@@ -489,6 +512,10 @@ export class NavigationController
         return
       }
 
+      if (tag) {
+        this.recents.add(tag.uuid)
+      }
+
       await this.eventBus.publishSync(
         {
           type: CrossControllerEvent.TagChanged,
@@ -496,6 +523,9 @@ export class NavigationController
         },
         InternalEventPublishStrategy.SEQUENCE,
       )
+      if (userTriggered && scrollIntoView) {
+        this.tagToScrollIntoView = tag
+      }
     })
   }
 
@@ -588,7 +618,7 @@ export class NavigationController
     let shouldDelete = !userTriggered
     if (userTriggered) {
       shouldDelete = await confirmDialog({
-        title: `Delete tag "${tag.title}"?`,
+        title: StringUtils.deleteTag(tag.title),
         text: STRING_DELETE_TAG,
         confirmButtonStyle: 'danger',
       })
@@ -655,5 +685,25 @@ export class NavigationController
         mutator.title = newTitle
       })
     }
+  }
+
+  private setDisplayOptionsAndReloadTags = () => {
+    this.items.setTagsAndViewsDisplayOptions({
+      searchQuery: {
+        query: this.searchQuery,
+        includeProtectedNoteText: false,
+        shouldCheckForSomeTagMatches: false,
+      },
+    })
+    this.reloadTags()
+  }
+
+  public setSearchQuery = (query: string) => {
+    this.searchQuery = query
+    this.setDisplayOptionsAndReloadTags()
+  }
+
+  public get isSearching(): boolean {
+    return this.searchQuery.length > 0
   }
 }

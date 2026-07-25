@@ -1,4 +1,4 @@
-import { convertStringifiedBooleanToBoolean, isDesktopApplication } from '@/Utils'
+import { isDesktopApplication } from '@/Utils'
 import { STRING_FAILED_TO_UPDATE_USER_SETTING } from '@/Constants/Strings'
 import { useCallback, useEffect, useState } from 'react'
 import { WebApplication } from '@/Application/WebApplication'
@@ -6,9 +6,7 @@ import { observer } from 'mobx-react-lite'
 import { Subtitle, Text, Title } from '@/Components/Preferences/PreferencesComponents/Content'
 import Dropdown from '@/Components/Dropdown/Dropdown'
 import { DropdownItem } from '@/Components/Dropdown/DropdownItem'
-import Switch from '@/Components/Switch/Switch'
-import HorizontalSeparator from '@/Components/Shared/HorizontalSeparator'
-import { EmailBackupFrequency, MuteFailedBackupsEmailsOption, SettingName } from '@standardnotes/snjs'
+import { EmailBackupFrequency, SettingName } from '@standardnotes/snjs'
 import PreferencesGroup from '../../PreferencesComponents/PreferencesGroup'
 import PreferencesSegment from '../../PreferencesComponents/PreferencesSegment'
 import Spinner from '@/Components/Spinner/Spinner'
@@ -21,7 +19,6 @@ const EmailBackups = ({ application }: Props) => {
   const [isLoading, setIsLoading] = useState(false)
   const [emailFrequency, setEmailFrequency] = useState<EmailBackupFrequency>(EmailBackupFrequency.Disabled)
   const [emailFrequencyOptions, setEmailFrequencyOptions] = useState<DropdownItem[]>([])
-  const [isFailedBackupEmailMuted, setIsFailedBackupEmailMuted] = useState(true)
   const hasAccount = application.hasAccount()
 
   const loadEmailFrequencySetting = useCallback(async () => {
@@ -36,14 +33,6 @@ const EmailBackups = ({ application }: Props) => {
         userSettings.getSettingValue<EmailBackupFrequency>(
           SettingName.create(SettingName.NAMES.EmailBackupFrequency).getValue(),
           EmailBackupFrequency.Disabled,
-        ),
-      )
-      setIsFailedBackupEmailMuted(
-        convertStringifiedBooleanToBoolean(
-          userSettings.getSettingValue<MuteFailedBackupsEmailsOption>(
-            SettingName.create(SettingName.NAMES.MuteFailedBackupsEmails).getValue(),
-            MuteFailedBackupsEmailsOption.NotMuted,
-          ),
         ),
       )
     } catch (error) {
@@ -72,7 +61,7 @@ const EmailBackups = ({ application }: Props) => {
       await application.settings.updateSetting(settingName, payload, false)
       return true
     } catch (e) {
-      application.alerts.alert(STRING_FAILED_TO_UPDATE_USER_SETTING).catch(console.error)
+      application.alerts.alert(STRING_FAILED_TO_UPDATE_USER_SETTING()).catch(console.error)
       return false
     }
   }
@@ -87,19 +76,6 @@ const EmailBackups = ({ application }: Props) => {
     )
     if (!updateResult) {
       setEmailFrequency(previousFrequency)
-    }
-  }
-
-  const toggleMuteFailedBackupEmails = async () => {
-    const previousValue = isFailedBackupEmailMuted
-    setIsFailedBackupEmailMuted(!isFailedBackupEmailMuted)
-
-    const updateResult = await updateSetting(
-      SettingName.create(SettingName.NAMES.MuteFailedBackupsEmails).getValue(),
-      `${!isFailedBackupEmailMuted}`,
-    )
-    if (!updateResult) {
-      setIsFailedBackupEmailMuted(previousValue)
     }
   }
 
@@ -130,18 +106,6 @@ const EmailBackups = ({ application }: Props) => {
                 value={emailFrequency}
                 onChange={handleEmailFrequencyChange}
               />
-            )}
-          </div>
-          <HorizontalSeparator classes="my-4" />
-          <Subtitle>Email preferences</Subtitle>
-          <div className="flex justify-between gap-2 md:items-center">
-            <div className="flex flex-col">
-              <Text>Receive a notification email if an email backup fails.</Text>
-            </div>
-            {isLoading ? (
-              <Spinner className="h-5 w-5 flex-shrink-0" />
-            ) : (
-              <Switch onChange={toggleMuteFailedBackupEmails} checked={!isFailedBackupEmailMuted} />
             )}
           </div>
         </div>

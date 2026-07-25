@@ -20,11 +20,20 @@ import {
   ElementFormatType,
   $isElementNode,
   COMMAND_PRIORITY_LOW,
+  $createParagraphNode,
+  $isTextNode,
+  $getNodeByKey,
+  TextNode,
 } from 'lexical'
-import { mergeRegister, $findMatchingParent, $getNearestNodeOfType } from '@lexical/utils'
-import { $isLinkNode, $isAutoLinkNode, TOGGLE_LINK_COMMAND } from '@lexical/link'
+import {
+  mergeRegister,
+  $findMatchingParent,
+  $getNearestNodeOfType,
+  $getNearestBlockElementAncestorOrThrow,
+} from '@lexical/utils'
+import { $isLinkNode, TOGGLE_LINK_COMMAND, LinkNode } from '@lexical/link'
 import { $isListNode, ListNode } from '@lexical/list'
-import { $isHeadingNode } from '@lexical/rich-text'
+import { $isHeadingNode, $isQuoteNode } from '@lexical/rich-text'
 import {
   ComponentPropsWithoutRef,
   ForwardedRef,
@@ -53,19 +62,22 @@ import StyledTooltip from '@/Components/StyledTooltip/StyledTooltip'
 import { Toolbar, ToolbarItem, useToolbarStore } from '@ariakit/react'
 import { PasswordBlock } from '../Blocks/Password'
 import { URL_REGEX } from '@/Constants/Constants'
-import { $isLinkTextNode } from './ToolbarLinkTextEditor'
 import Popover from '@/Components/Popover/Popover'
-import LexicalTableOfContents from '@lexical/react/LexicalTableOfContents'
+import { TableOfContentsPlugin } from '@lexical/react/LexicalTableOfContentsPlugin'
 import Menu from '@/Components/Menu/Menu'
 import MenuItem, { MenuItemProps } from '@/Components/Menu/MenuItem'
 import { debounce, remToPx } from '@/Utils'
-import FloatingLinkEditor from './FloatingLinkEditor'
+import LinkEditor, { $isLinkTextNode } from './LinkEditor'
 import MenuItemSeparator from '@/Components/Menu/MenuItemSeparator'
 import { useStateRef } from '@/Hooks/useStateRef'
 import { getDOMRangeRect } from '../../Lexical/Utils/getDOMRangeRect'
 import { getPositionedPopoverStyles } from '@/Components/Popover/GetPositionedPopoverStyles'
 import usePreference from '@/Hooks/usePreference'
 import { ElementIds } from '@/Constants/ElementIDs'
+import { $isDecoratorBlockNode } from '@lexical/react/LexicalDecoratorBlockNode'
+import LinkViewer from './LinkViewer'
+import { OPEN_FILE_UPLOAD_MODAL_COMMAND } from '../EncryptedFilePlugin/FilePlugin'
+import { CREATE_NOTE_FROM_SELECTION_COMMAND } from '../NoteFromSelectionPlugin'
 
 const TOGGLE_LINK_AND_EDIT_COMMAND = createCommand<string | null>('TOGGLE_LINK_AND_EDIT_COMMAND')
 
@@ -99,8 +111,8 @@ const blockTypeToIconName = {
   quote: 'quote',
 }
 
-interface ToolbarButtonProps extends ComponentPropsWithoutRef<'button'> {
-  name: string
+interface ToolbarButtonProps extends Omit<ComponentPropsWithoutRef<'button'>, 'name'> {
+  name: NonNullable<ReactNode>
   active?: boolean
   iconName?: string
   children?: ReactNode
@@ -123,7 +135,6 @@ const ToolbarButton = forwardRef(
         showOnHover
         label={name}
         side="top"
-        portal={false}
         portalElement={isMobile ? parentElement : undefined}
         documentElement={parentElement}
       >
@@ -132,9 +143,11 @@ const ToolbarButton = forwardRef(
             'flex select-none items-center justify-center rounded p-0.5 focus:shadow-none focus:outline-none enabled:hover:bg-default enabled:focus-visible:bg-default disabled:opacity-50 md:border md:border-transparent enabled:hover:md:translucent-ui:border-[--popover-border-color]',
             className,
           )}
+          onClick={() => {
+            onSelect()
+          }}
           onMouseDown={(event) => {
             event.preventDefault()
-            onSelect()
           }}
           onContextMenu={(event) => {
             editor.focus()
@@ -172,14 +185,17 @@ interface ToolbarMenuItemProps extends Omit<MenuItemProps, 'children'> {
   active?: boolean
 }
 
-const ToolbarMenuItem = ({ name, iconName, active, ...props }: ToolbarMenuItemProps) => {
+const ToolbarMenuItem = ({ name, iconName, active, onClick, ...props }: ToolbarMenuItemProps) => {
   return (
     <MenuItem
       className={classNames('overflow-hidden md:py-2', active ? '!bg-info !text-info-contrast' : 'hover:bg-contrast')}
+      onClick={onClick}
+      onMouseDown={(e) => e.preventDefault()}
       {...props}
     >
       <Icon type={iconName} className="-mt-px mr-2.5 flex-shrink-0" />
       <span className="overflow-hidden text-ellipsis whitespace-nowrap">{name}</span>
+      {active && <Icon type="check" className="ml-auto" />}
     </MenuItem>
   )
 }
@@ -206,12 +222,11 @@ const ToolbarPlugin = () => {
   const [isCode, setIsCode] = useState(false)
   const [isHighlight, setIsHighlight] = useState(false)
 
-  const [isLink, setIsLink] = useState(false)
-  const [isAutoLink, setIsAutoLink] = useState(false)
-  const [isLinkText, setIsLinkText] = useState(false)
-  const [isLinkEditMode, setIsLinkEditMode] = useState(false)
-  const [linkText, setLinkText] = useState<string>('')
-  const [linkUrl, setLinkUrl] = useState<string>('')
+  const [hasNonCollapsedSelection, setHasNonCollapsedSelection] = useState(false)
+
+  const [linkNode, setLinkNode] = useState<LinkNode | null>(null)
+  const [linkTextNode, setLinkTextNode] = useState<TextNode | null>(null)
+  const [isEditingLink, setIsEditingLink] = useState(false)
 
   const [isTOCOpen, setIsTOCOpen] = useState(false)
   const tocAnchorRef = useRef<HTMLButtonElement>(null)
@@ -299,7 +314,11 @@ const ToolbarPlugin = () => {
       return
     }
 
+    setHasNonCollapsedSelection(!selection.isCollapsed())
+
     const anchorNode = selection.anchor.getNode()
+    const focusNode = selection.focus.getNode()
+    const isAnchorSameAsFocus = anchorNode === focusNode
     let element =
       anchorNode.getKey() === 'root'
         ? anchorNode
@@ -328,23 +347,18 @@ const ToolbarPlugin = () => {
     // Update links
     const node = getSelectedNode(selection)
     const parent = node.getParent()
-    if ($isLinkNode(parent) || $isLinkNode(node)) {
-      setIsLink(true)
+    setIsEditingLink(false)
+    if ($isLinkNode(node) && isAnchorSameAsFocus) {
+      setLinkNode(node)
+    } else if ($isLinkNode(parent) && isAnchorSameAsFocus) {
+      setLinkNode(parent)
     } else {
-      setIsLink(false)
-    }
-    setLinkUrl($isLinkNode(parent) ? parent.getURL() : $isLinkNode(node) ? node.getURL() : '')
-    if ($isAutoLinkNode(parent) || $isAutoLinkNode(node)) {
-      setIsAutoLink(true)
-    } else {
-      setIsAutoLink(false)
+      setLinkNode(null)
     }
     if ($isLinkTextNode(node, selection)) {
-      setIsLinkText(true)
-      setLinkText(node.getTextContent())
+      setLinkTextNode(node)
     } else {
-      setIsLinkText(false)
-      setLinkText('')
+      setLinkTextNode(null)
     }
 
     if (elementDOM !== null) {
@@ -376,6 +390,49 @@ const ToolbarPlugin = () => {
     containerElement.style.removeProperty('transform-origin')
     containerElement.style.removeProperty('opacity')
   }, [])
+
+  const clearFormatting = useCallback(() => {
+    activeEditor.update(() => {
+      const selection = $getSelection()
+      if ($isRangeSelection(selection)) {
+        const anchor = selection.anchor
+        const focus = selection.focus
+        const nodes = selection.getNodes()
+
+        if (anchor.key === focus.key && anchor.offset === focus.offset) {
+          return
+        }
+
+        nodes.forEach((node, idx) => {
+          // We split the first and last node by the selection
+          // So that we don't format unselected text inside those nodes
+          if ($isTextNode(node)) {
+            // Use a separate variable to ensure TS does not lose the refinement
+            let textNode = node
+            if (idx === 0 && anchor.offset !== 0) {
+              textNode = textNode.splitText(anchor.offset)[1] || textNode
+            }
+            if (idx === nodes.length - 1) {
+              textNode = textNode.splitText(focus.offset)[0] || textNode
+            }
+
+            if (textNode.__style !== '') {
+              textNode.setStyle('')
+            }
+            if (textNode.__format !== 0) {
+              textNode.setFormat(0)
+              $getNearestBlockElementAncestorOrThrow(textNode).setFormat('')
+            }
+            node = textNode
+          } else if ($isHeadingNode(node) || $isQuoteNode(node)) {
+            node.replace($createParagraphNode(), true)
+          } else if ($isDecoratorBlockNode(node)) {
+            node.setFormat('')
+          }
+        })
+      }
+    })
+  }, [activeEditor])
 
   useEffect(() => {
     if (isMobile) {
@@ -448,13 +505,11 @@ const ToolbarPlugin = () => {
         TOGGLE_LINK_AND_EDIT_COMMAND,
         (payload) => {
           if (payload === null) {
+            setIsEditingLink(false)
             return activeEditor.dispatchCommand(TOGGLE_LINK_COMMAND, null)
-          } else if (typeof payload === 'string') {
-            const dispatched = activeEditor.dispatchCommand(TOGGLE_LINK_COMMAND, payload)
-            setIsLink(true)
-            setLinkUrl(payload)
-            setIsLinkEditMode(true)
-            return dispatched
+          } else {
+            setIsEditingLink(true)
+            return true
           }
           return false
         },
@@ -485,11 +540,9 @@ const ToolbarPlugin = () => {
               .catch((error) => {
                 console.error(error)
                 activeEditor.dispatchCommand(TOGGLE_LINK_AND_EDIT_COMMAND, '')
-                setIsLinkEditMode(true)
               })
           } else {
             activeEditor.dispatchCommand(TOGGLE_LINK_AND_EDIT_COMMAND, '')
-            setIsLinkEditMode(true)
           }
           return true
         }
@@ -498,7 +551,7 @@ const ToolbarPlugin = () => {
       },
       COMMAND_PRIORITY_NORMAL,
     )
-  }, [activeEditor, isLink])
+  }, [activeEditor])
 
   const dismissButtonRef = useRef<HTMLButtonElement>(null)
 
@@ -523,7 +576,7 @@ const ToolbarPlugin = () => {
       const elementToBeFocused = event.relatedTarget as Node
       const containerContainsElementToFocus = container?.contains(elementToBeFocused)
       const linkEditorContainsElementToFocus = document
-        .getElementById('super-link-editor')
+        .getElementById(ElementIds.SuperEditor)
         ?.contains(elementToBeFocused)
       const willFocusDismissButton = dismissButtonRef.current === elementToBeFocused
       if ((containerContainsElementToFocus || linkEditorContainsElementToFocus) && !willFocusDismissButton) {
@@ -607,16 +660,22 @@ const ToolbarPlugin = () => {
         id="super-mobile-toolbar"
         ref={containerRef}
       >
-        {isLink && (
-          <FloatingLinkEditor
-            linkUrl={linkUrl}
-            linkText={linkText}
-            isEditMode={isLinkEditMode}
-            setEditMode={setIsLinkEditMode}
-            editor={editor}
-            isAutoLink={isAutoLink}
-            isLinkText={isLinkText}
+        {linkNode && !isEditingLink && (
+          <LinkViewer
+            key={linkNode.__key}
+            linkNode={linkNode}
             isMobile={isMobile}
+            setIsEditingLink={setIsEditingLink}
+            editor={activeEditor}
+          />
+        )}
+        {isEditingLink && (
+          <LinkEditor
+            editor={activeEditor}
+            setIsEditingLink={setIsEditingLink}
+            isMobile={isMobile}
+            linkNode={linkNode}
+            linkTextNode={linkTextNode}
           />
         )}
         <div className="flex w-full flex-shrink-0 border-t border-border md:border-0">
@@ -685,7 +744,7 @@ const ToolbarPlugin = () => {
             <ToolbarButton
               name="Link"
               iconName="link"
-              active={isLink}
+              active={!!linkNode}
               onSelect={() => {
                 editor.dispatchCommand(TOGGLE_LINK_AND_EDIT_COMMAND, '')
               }}
@@ -741,6 +800,22 @@ const ToolbarPlugin = () => {
                 <Icon type="chevron-down" size="custom" className="ml-2 h-4 w-4 md:h-3.5 md:w-3.5" />
               </ToolbarButton>
             )}
+            <ToolbarButton
+              name={
+                <>
+                  <div className="mb-1 font-semibold">Create new note from selection</div>
+                  <div className="max-w-[35ch] text-xs">
+                    Creates a new note containing the current selection and replaces the selection with a link to the
+                    new note.
+                  </div>
+                </>
+              }
+              iconName="notes"
+              onSelect={() => {
+                editor.dispatchCommand(CREATE_NOTE_FROM_SELECTION_COMMAND, undefined)
+              }}
+              disabled={!hasNonCollapsedSelection}
+            />
           </Toolbar>
           {isMobile && (
             <button
@@ -763,11 +838,12 @@ const ToolbarPlugin = () => {
         className="py-1"
         disableMobileFullscreenTakeover
         disableFlip
+        disableApplyingMobileWidth
         portal={false}
         documentElement={popoverDocumentElement}
       >
         <div className="mb-1.5 mt-1 px-3 text-sm font-semibold uppercase text-text">Table of Contents</div>
-        <LexicalTableOfContents>
+        <TableOfContentsPlugin>
           {(tableOfContents) => {
             if (!tableOfContents.length) {
               return <div className="py-2 text-center">No headings found</div>
@@ -785,15 +861,24 @@ const ToolbarPlugin = () => {
                       key={key}
                       className="overflow-hidden md:py-2"
                       onClick={() => {
-                        editor.getEditorState().read(() => {
+                        setIsTOCOpen(false)
+                        editor.update(() => {
+                          const node = $getNodeByKey(key)
+                          if (!node) {
+                            return
+                          }
+                          node.selectEnd()
+                          editor.focus()
                           const domElement = editor.getElementByKey(key)
                           if (!domElement) {
                             return
                           }
-                          domElement.scrollIntoView({ block: 'start' })
-                          setIsTOCOpen(false)
+                          setTimeout(() => {
+                            domElement.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                          }, 1)
                         })
                       }}
+                      onMouseDown={(e) => e.preventDefault()}
                       style={{
                         paddingLeft: `${(level - 1) * remToPx(1) + remToPx(0.75)}px`,
                       }}
@@ -806,7 +891,7 @@ const ToolbarPlugin = () => {
               </Menu>
             )
           }}
-        </LexicalTableOfContents>
+        </TableOfContentsPlugin>
       </Popover>
       <Popover
         title="Text formatting options"
@@ -847,10 +932,11 @@ const ToolbarPlugin = () => {
             active={isSuperscript}
             onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'superscript')}
           />
+          <ToolbarMenuItem name="Clear formatting" iconName="trash" onClick={clearFormatting} />
         </Menu>
       </Popover>
       <Popover
-        title="Text style"
+        title="Block style"
         anchorElement={textStyleAnchorRef}
         open={isTextStyleMenuOpen}
         togglePopover={() => setIsTextStyleMenuOpen(!isTextStyleMenuOpen)}
@@ -863,7 +949,7 @@ const ToolbarPlugin = () => {
         portal={false}
         documentElement={popoverDocumentElement}
       >
-        <Menu a11yLabel="Text style" className="!px-0" onClick={() => setIsTextStyleMenuOpen(false)}>
+        <Menu a11yLabel="Block style" className="!px-0" onClick={() => setIsTextStyleMenuOpen(false)}>
           <ToolbarMenuItem
             name="Normal"
             iconName="paragraph"
@@ -984,6 +1070,11 @@ const ToolbarPlugin = () => {
             onClick={() =>
               showModal('Insert Table', (onClose) => <InsertTableDialog activeEditor={editor} onClose={onClose} />)
             }
+          />
+          <ToolbarMenuItem
+            name="Upload file"
+            iconName="file"
+            onClick={() => activeEditor.dispatchCommand(OPEN_FILE_UPLOAD_MODAL_COMMAND, undefined)}
           />
           <ToolbarMenuItem
             name="Image from URL"

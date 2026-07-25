@@ -40,8 +40,10 @@ const ItemsPaths = {
 const SettingsPaths = {
   settings: (userUuid: string) => `/v1/users/${userUuid}/settings`,
   setting: (userUuid: string, settingName: string) => `/v1/users/${userUuid}/settings/${settingName}`,
+  mfaSecret: (userUuid: string) => `/v1/users/${userUuid}/mfa-secret`,
   subscriptionSetting: (userUuid: string, settingName: string) =>
     `/v1/users/${userUuid}/subscription-settings/${settingName}`,
+  subscriptionSettings: (userUuid: string) => `/v1/users/${userUuid}/subscription-settings`,
 }
 
 const SubscriptionPaths = {
@@ -69,6 +71,7 @@ export const Paths = {
     ...SettingsPaths,
     ...SubscriptionPaths,
     ...UserPaths,
+    meta: '/v1/meta',
   },
   v2: {
     ...UserPathsV2,

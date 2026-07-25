@@ -147,6 +147,8 @@ import {
   DesignateSurvivor,
   SyncBackoffService,
   SyncBackoffServiceInterface,
+  StorageServiceInterface,
+  ProtectionsClientInterface,
 } from '@standardnotes/services'
 import { ItemManager } from '../../Services/Items/ItemManager'
 import { PayloadManager } from '../../Services/Payloads/PayloadManager'
@@ -1024,6 +1026,7 @@ export class Dependencies {
       return new GetRecoveryCodes(
         this.get<AuthManager>(TYPES.AuthManager),
         this.get<SettingsService>(TYPES.SettingsService),
+        this.get<EncryptionService>(TYPES.EncryptionService),
       )
     })
 
@@ -1088,7 +1091,7 @@ export class Dependencies {
     })
 
     this.factory.set(TYPES.AuthApiService, () => {
-      return new AuthApiService(this.get<AuthServer>(TYPES.AuthServer))
+      return new AuthApiService(this.get<AuthServer>(TYPES.AuthServer), this.options.apiVersion)
     })
 
     this.factory.set(TYPES.AuthManager, () => {
@@ -1226,8 +1229,9 @@ export class Dependencies {
     this.factory.set(TYPES.MfaService, () => {
       return new MfaService(
         this.get<SettingsService>(TYPES.SettingsService),
-        this.get<PureCryptoInterface>(TYPES.Crypto),
         this.get<FeaturesService>(TYPES.FeaturesService),
+        this.get<ProtectionsClientInterface>(TYPES.ProtectionService),
+        this.get<EncryptionService>(TYPES.EncryptionService),
         this.get<InternalEventBus>(TYPES.InternalEventBus),
       )
     })
@@ -1282,6 +1286,7 @@ export class Dependencies {
         this.get<ItemManager>(TYPES.ItemManager),
         this.get<MutatorService>(TYPES.MutatorService),
         this.get<SyncService>(TYPES.SyncService),
+        this.get<StorageServiceInterface>(TYPES.DiskStorageService),
         this.get<InternalEventBus>(TYPES.InternalEventBus),
       )
     })
@@ -1428,13 +1433,14 @@ export class Dependencies {
     })
 
     this.factory.set(TYPES.SubscriptionApiService, () => {
-      return new SubscriptionApiService(this.get<SubscriptionServer>(TYPES.SubscriptionServer))
+      return new SubscriptionApiService(this.get<SubscriptionServer>(TYPES.SubscriptionServer), this.options.apiVersion)
     })
 
     this.factory.set(TYPES.UserApiService, () => {
       return new UserApiService(
         this.get<UserServer>(TYPES.UserServer),
         this.get<UserRequestServer>(TYPES.UserRequestServer),
+        this.options.apiVersion,
       )
     })
 
@@ -1538,6 +1544,7 @@ export class Dependencies {
         this.options.environment,
         this.options.appVersion,
         SnjsVersion,
+        this.options.apiVersion,
         this.get<Logger>(TYPES.Logger),
       )
     })

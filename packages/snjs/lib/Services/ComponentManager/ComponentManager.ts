@@ -30,7 +30,7 @@ import {
   NativeFeatureIdentifier,
   GetDeprecatedEditors,
 } from '@standardnotes/features'
-import { Copy, removeFromArray, sleep, isNotUndefined, LoggerInterface } from '@standardnotes/utils'
+import { Copy, removeFromArray, sleep, isNotUndefined, LoggerInterface, blobToBase64 } from '@standardnotes/utils'
 import { ComponentViewer } from '@Lib/Services/ComponentManager/ComponentViewer'
 import {
   AbstractService,
@@ -48,6 +48,7 @@ import {
   ItemManagerInterface,
   SyncServiceInterface,
   FeatureStatus,
+  LocalPrefKey,
 } from '@standardnotes/services'
 import { GetFeatureUrl } from './UseCase/GetFeatureUrl'
 import { ComponentManagerEventData } from './ComponentManagerEventData'
@@ -89,6 +90,8 @@ export class ComponentManager
     this.items,
   )
 
+  private nativeThemesAsBase64: Record<string, string> = {}
+
   constructor(
     private items: ItemManagerInterface,
     private mutator: MutatorClientInterface,
@@ -108,6 +111,7 @@ export class ComponentManager
     this.addSyncedComponentItemObserver()
     this.registerMobileNativeComponentUrls()
     this.registerDeprecatedEditorUrlsForAndroid()
+    void this.fetchNativeThemesOnMobile()
 
     this.eventDisposers.push(
       preferences.addEventObserver((event) => {
@@ -294,6 +298,29 @@ export class ComponentManager
     }
   }
 
+  /**
+   * Gets all the native themes' CSS and stores them as `data:text/css;base64,...` URLs.
+   */
+  private async fetchNativeThemesOnMobile(): Promise<void> {
+    if (!isMobileDevice(this.device)) {
+      return
+    }
+    try {
+      for await (const theme of GetNativeThemes()) {
+        const css = await this.device.getNativeThemeCSS(theme.identifier)
+        if (css) {
+          const blob = new Blob([css], { type: 'text/css' })
+          const base64 = await blobToBase64(blob)
+          this.nativeThemesAsBase64[theme.identifier] = base64
+        }
+      }
+    } catch (error) {
+      console.error(error)
+    } finally {
+      this.postActiveThemesToAllViewers()
+    }
+  }
+
   private registerDeprecatedEditorUrlsForAndroid(): void {
     if (!isMobileDevice(this.device)) {
       return
@@ -366,7 +393,19 @@ export class ComponentManager
   public urlsForActiveThemes(): string[] {
     const themes = this.getActiveThemes()
     const urls = []
+    const isMobile = isMobileDevice(this.device)
     for (const theme of themes) {
+      if (isMobile && theme.isNativeFeature) {
+        /**
+         * Since native themes on mobile are stored in the app bundle and accessed as `file://` URLs,
+         * external editors cannot access them. To solve this, we store base64 encoded versions of the themes and send those to the editor instead of a file URL.
+         */
+        const base64 = this.nativeThemesAsBase64[theme.featureIdentifier]
+        if (base64) {
+          urls.push(base64)
+          continue
+        }
+      }
       const url = this.urlForFeature(theme)
       if (url) {
         urls.push(url)
@@ -389,36 +428,40 @@ export class ComponentManager
     return this.viewers.find((viewer) => viewer.sessionKey === key)
   }
 
-  public async toggleTheme(uiFeature: UIFeature<ThemeFeatureDescription>): Promise<void> {
+  public toggleOtherNonLayerableThemes(uiFeature: UIFeature<ThemeFeatureDescription>): void {
+    const activeThemes = this.getActiveThemes()
+    for (const candidate of activeThemes) {
+      if (candidate.featureIdentifier === uiFeature.featureIdentifier) {
+        continue
+      }
+
+      if (!candidate.layerable) {
+        this.removeActiveTheme(candidate)
+      }
+    }
+  }
+
+  public async toggleTheme(uiFeature: UIFeature<ThemeFeatureDescription>, skipEntitlementCheck = false): Promise<void> {
     this.logger.info('Toggling theme', uiFeature.uniqueIdentifier)
 
     if (this.isThemeActive(uiFeature)) {
-      await this.removeActiveTheme(uiFeature)
+      this.removeActiveTheme(uiFeature)
       return
     }
 
     const featureStatus = this.features.getFeatureStatus(uiFeature.uniqueIdentifier)
-    if (featureStatus !== FeatureStatus.Entitled) {
+    if (!skipEntitlementCheck && featureStatus !== FeatureStatus.Entitled) {
       return
     }
 
     /* Activate current before deactivating others, so as not to flicker */
-    await this.addActiveTheme(uiFeature)
+    this.addActiveTheme(uiFeature)
 
     /* Deactive currently active theme(s) if new theme is not layerable */
     if (!uiFeature.layerable) {
       await sleep(10)
 
-      const activeThemes = this.getActiveThemes()
-      for (const candidate of activeThemes) {
-        if (candidate.featureIdentifier === uiFeature.featureIdentifier) {
-          continue
-        }
-
-        if (!candidate.layerable) {
-          await this.removeActiveTheme(candidate)
-        }
-      }
+      this.toggleOtherNonLayerableThemes(uiFeature)
     }
   }
 
@@ -453,7 +496,7 @@ export class ComponentManager
     const features: NativeFeatureIdentifier[] = []
     const uuids: Uuid[] = []
 
-    const strings = this.preferences.getValue(PrefKey.ActiveThemes, undefined) ?? []
+    const strings = new Set(this.preferences.getLocalValue(LocalPrefKey.ActiveThemes, []))
     for (const string of strings) {
       const nativeIdentifier = NativeFeatureIdentifier.create(string)
       if (!nativeIdentifier.isFailed()) {
@@ -534,24 +577,24 @@ export class ComponentManager
     return preferences[preferencesLookupKey]
   }
 
-  async addActiveTheme(theme: UIFeature<ThemeFeatureDescription>): Promise<void> {
-    const activeThemes = (this.preferences.getValue(PrefKey.ActiveThemes, undefined) ?? []).slice()
+  addActiveTheme(theme: UIFeature<ThemeFeatureDescription>) {
+    const activeThemes = this.preferences.getLocalValue(LocalPrefKey.ActiveThemes, []).slice()
 
     activeThemes.push(theme.uniqueIdentifier.value)
 
-    await this.preferences.setValue(PrefKey.ActiveThemes, activeThemes)
+    this.preferences.setLocalValue(LocalPrefKey.ActiveThemes, activeThemes)
   }
 
-  async replaceActiveTheme(theme: UIFeature<ThemeFeatureDescription>): Promise<void> {
-    await this.preferences.setValue(PrefKey.ActiveThemes, [theme.uniqueIdentifier.value])
+  replaceActiveTheme(theme: UIFeature<ThemeFeatureDescription>) {
+    this.preferences.setLocalValue(LocalPrefKey.ActiveThemes, [theme.uniqueIdentifier.value])
   }
 
-  async removeActiveTheme(theme: UIFeature<ThemeFeatureDescription>): Promise<void> {
-    const activeThemes = this.preferences.getValue(PrefKey.ActiveThemes, undefined) ?? []
+  removeActiveTheme(theme: UIFeature<ThemeFeatureDescription>) {
+    const activeThemes = this.preferences.getLocalValue(LocalPrefKey.ActiveThemes, [])
 
     const filteredThemes = activeThemes.filter((activeTheme) => activeTheme !== theme.uniqueIdentifier.value)
 
-    await this.preferences.setValue(PrefKey.ActiveThemes, filteredThemes)
+    this.preferences.setLocalValue(LocalPrefKey.ActiveThemes, filteredThemes)
   }
 
   isThemeActive(theme: UIFeature<ThemeFeatureDescription>): boolean {
@@ -559,13 +602,13 @@ export class ComponentManager
       return false
     }
 
-    const activeThemes = this.preferences.getValue(PrefKey.ActiveThemes, undefined) ?? []
+    const activeThemes = this.preferences.getLocalValue(LocalPrefKey.ActiveThemes, [])
 
     return activeThemes.includes(theme.uniqueIdentifier.value)
   }
 
   async addActiveComponent(component: ComponentInterface): Promise<void> {
-    const activeComponents = (this.preferences.getValue(PrefKey.ActiveComponents, undefined) ?? []).slice()
+    const activeComponents = this.preferences.getValue(PrefKey.ActiveComponents, []).slice()
 
     activeComponents.push(component.uuid)
 

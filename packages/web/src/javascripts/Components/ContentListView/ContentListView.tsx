@@ -11,7 +11,7 @@ import { WebApplication } from '@/Application/WebApplication'
 import { PANEL_NAME_NOTES } from '@/Constants/Constants'
 import { FileItem, Platform, PrefKey, WebAppEvent } from '@standardnotes/snjs'
 import { observer } from 'mobx-react-lite'
-import { forwardRef, useCallback, useEffect, useMemo } from 'react'
+import { forwardRef, useCallback, useEffect, useMemo, useRef } from 'react'
 import ContentList from '@/Components/ContentListView/ContentList'
 import NoAccountWarning from '@/Components/NoAccountWarning/NoAccountWarning'
 import { ElementIds } from '@/Constants/ElementIDs'
@@ -25,7 +25,6 @@ import DailyContentList from './Daily/DailyContentList'
 import { ListableContentItem } from './Types/ListableContentItem'
 import { FeatureName } from '@/Controllers/FeatureName'
 import { PanelResizedData } from '@/Types/PanelResizedData'
-import { useForwardedRef } from '@/Hooks/useForwardedRef'
 import FloatingAddButton from './FloatingAddButton'
 import ContentTableView from '../ContentTableView/ContentTableView'
 import { MutuallyExclusiveMediaQueryBreakpoints, useMediaQuery } from '@/Hooks/useMediaQuery'
@@ -77,7 +76,7 @@ const ContentListView = forwardRef<HTMLDivElement, Props>(
       selectPreviousItem,
     } = itemListController
 
-    const innerRef = useForwardedRef(ref)
+    const innerRef = useRef<HTMLDivElement | null>(null)
 
     const { addDragTarget, removeDragTarget } = useFileDragNDrop()
 
@@ -177,15 +176,6 @@ const ContentListView = forwardRef<HTMLDivElement, Props>(
        */
       return application.keyboardService.addCommandHandlers([
         {
-          command: CREATE_NEW_NOTE_KEYBOARD_COMMAND,
-          category: 'General',
-          description: 'Create new note',
-          onKeyDown: (event) => {
-            event.preventDefault()
-            void addNewItem()
-          },
-        },
-        {
           command: NEXT_LIST_ITEM_KEYBOARD_COMMAND,
           category: 'Notes list',
           description: 'Go to next item',
@@ -263,10 +253,27 @@ const ContentListView = forwardRef<HTMLDivElement, Props>(
     )
 
     const addButtonLabel = useMemo(() => {
-      return isFilesSmartView
-        ? 'Upload file'
-        : `Create a new note in the selected tag (${shortcutForCreate && keyboardStringForShortcut(shortcutForCreate)})`
+      let shortcut = keyboardStringForShortcut(shortcutForCreate)
+      if (shortcut) {
+        shortcut = '(' + shortcut + ')'
+      }
+      return isFilesSmartView ? `Upload file ${shortcut}` : `Create a new note in the selected tag ${shortcut}`
     }, [isFilesSmartView, shortcutForCreate])
+
+    useEffect(
+      () =>
+        application.commands.addWithShortcut(
+          CREATE_NEW_NOTE_KEYBOARD_COMMAND,
+          'General',
+          isFilesSmartView ? 'Upload file' : 'Create new note',
+          (event) => {
+            event?.preventDefault()
+            void addNewItem()
+          },
+          isFilesSmartView ? 'upload' : 'add',
+        ),
+      [addNewItem, application.commands, isFilesSmartView],
+    )
 
     const dailyMode = selectedAsTag?.isDailyEntry
 
@@ -297,7 +304,7 @@ const ContentListView = forwardRef<HTMLDivElement, Props>(
         id={id}
         className={classNames(className, 'sn-component section h-full overflow-hidden pt-safe-top')}
         aria-label={'Notes & Files'}
-        ref={mergeRefs([innerRef, setElement])}
+        ref={mergeRefs([ref, innerRef, setElement])}
       >
         {isMobileScreen && !itemListController.isMultipleSelectionMode && (
           <FloatingAddButton onClick={addNewItem} label={addButtonLabel} style={dailyMode ? 'danger' : 'info'} />

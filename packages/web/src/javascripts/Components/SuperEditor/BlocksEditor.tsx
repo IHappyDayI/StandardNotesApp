@@ -1,20 +1,17 @@
-import { FunctionComponent, useCallback, useState } from 'react'
+import { FocusEvent, FunctionComponent, useCallback, useState } from 'react'
 import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin'
 import { ContentEditable } from '@lexical/react/LexicalContentEditable'
 import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin'
 import { ClearEditorPlugin } from '@lexical/react/LexicalClearEditorPlugin'
 import { MarkdownShortcutPlugin } from '@lexical/react/LexicalMarkdownShortcutPlugin'
 import { TablePlugin } from '@lexical/react/LexicalTablePlugin'
-import LexicalErrorBoundary from '@lexical/react/LexicalErrorBoundary'
+import { LexicalErrorBoundary } from '@lexical/react/LexicalErrorBoundary'
 import { HashtagPlugin } from '@lexical/react/LexicalHashtagPlugin'
 import { HistoryPlugin } from '@lexical/react/LexicalHistoryPlugin'
 import { LinkPlugin } from '@lexical/react/LexicalLinkPlugin'
 import { ListPlugin } from '@lexical/react/LexicalListPlugin'
 import { EditorState, LexicalEditor } from 'lexical'
 import HorizontalRulePlugin from './Plugins/HorizontalRulePlugin'
-import TwitterPlugin from './Plugins/TwitterPlugin'
-import YouTubePlugin from './Plugins/YouTubePlugin'
-import AutoEmbedPlugin from './Plugins/AutoEmbedPlugin'
 import CollapsiblePlugin from './Plugins/CollapsiblePlugin'
 import DraggableBlockPlugin from './Plugins/DraggableBlockPlugin'
 import CodeHighlightPlugin from './Plugins/CodeHighlightPlugin'
@@ -27,14 +24,14 @@ import { RemoveBrokenTablesPlugin } from './Plugins/TablePlugin'
 import TableActionMenuPlugin from './Plugins/TableCellActionMenuPlugin'
 import ToolbarPlugin from './Plugins/ToolbarPlugin/ToolbarPlugin'
 import { useMediaQuery, MutuallyExclusiveMediaQueryBreakpoints } from '@/Hooks/useMediaQuery'
-import { CheckListPlugin } from '@lexical/react/LexicalCheckListPlugin'
 import RemoteImagePlugin from './Plugins/RemoteImagePlugin/RemoteImagePlugin'
 import CodeOptionsPlugin from './Plugins/CodeOptionsPlugin/CodeOptions'
-import { SuperSearchContextProvider } from './Plugins/SearchPlugin/Context'
 import { SearchPlugin } from './Plugins/SearchPlugin/SearchPlugin'
 import AutoLinkPlugin from './Plugins/AutoLinkPlugin/AutoLinkPlugin'
 import DatetimePlugin from './Plugins/DateTimePlugin/DateTimePlugin'
 import PasswordPlugin from './Plugins/PasswordPlugin/PasswordPlugin'
+import { CheckListPlugin } from './Plugins/CheckListPlugin'
+import GoogleDocsPastePlugin from './Plugins/GoogleDocsPastePlugin/GoogleDocsPastePlugin'
 
 type BlocksEditorProps = {
   onChange?: (value: string, preview: string) => void
@@ -44,8 +41,8 @@ type BlocksEditorProps = {
   spellcheck?: boolean
   ignoreFirstChange?: boolean
   readonly?: boolean
-  onFocus?: () => void
-  onBlur?: () => void
+  onFocus?: (event: FocusEvent) => void
+  onBlur?: (event: FocusEvent) => void
 }
 
 export const BlocksEditor: FunctionComponent<BlocksEditorProps> = ({
@@ -126,20 +123,16 @@ export const BlocksEditor: FunctionComponent<BlocksEditorProps> = ({
       <CodeHighlightPlugin />
       <LinkPlugin />
       <HashtagPlugin />
-      <AutoEmbedPlugin />
-      <TwitterPlugin />
-      <YouTubePlugin />
       <CollapsiblePlugin />
       <TabIndentationPlugin />
       <RemoveBrokenTablesPlugin />
       <RemoteImagePlugin />
       <CodeOptionsPlugin />
-      <SuperSearchContextProvider>
-        <SearchPlugin />
-      </SuperSearchContextProvider>
+      <SearchPlugin />
       <DatetimePlugin />
       <PasswordPlugin />
       <AutoLinkPlugin />
+      <GoogleDocsPastePlugin />
       {!readonly && floatingAnchorElem && (
         <>
           <DraggableBlockPlugin anchorElem={floatingAnchorElem} />

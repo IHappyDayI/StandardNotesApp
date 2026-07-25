@@ -38,6 +38,9 @@ import {
   DocumentDirectoryPath,
   DownloadDirectoryPath,
   exists,
+  MainBundlePath,
+  readFile,
+  readFileAssets,
   unlink,
   writeFile,
 } from 'react-native-fs'
@@ -80,6 +83,7 @@ export class MobileDevice implements MobileDeviceInterface {
     private colorSchemeService?: ColorSchemeObserverService,
   ) {
     this.initializeNotifications().catch(console.error)
+    this.reloadStatusBarStyle(false)
   }
 
   async initializeNotifications() {
@@ -505,6 +509,15 @@ export class MobileDevice implements MobileDeviceInterface {
     } catch (error) {
       this.consoleLog(error)
     }
+  }
+
+  async getNativeThemeCSS(identifier: string): Promise<string | undefined> {
+    let path = `Web.bundle/src/web-src/components/assets/${identifier}/index.css`
+    if (Platform.OS === 'ios') {
+      path = `${MainBundlePath}/${path}`
+    }
+    const content = Platform.OS === 'android' ? readFileAssets(path) : readFile(path)
+    return content
   }
 
   async previewFile(base64: string, filename: string): Promise<boolean> {

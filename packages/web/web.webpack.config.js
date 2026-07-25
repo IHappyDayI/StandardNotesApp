@@ -1,3 +1,4 @@
+/* eslint-disable */
 const path = require('path')
 const webpack = require('webpack')
 const MiniCssExtractPlugin = require('mini-css-extract-plugin')
@@ -92,6 +93,13 @@ module.exports = (env) => {
     },
     module: {
       rules: [
+        {
+          test: /\.worker\.tsx?$/,
+          loader: 'worker-loader',
+          options: {
+            inline: 'fallback',
+          },
+        },
         {
           test: /\.(js|tsx?)$/,
           /**
