@@ -11,7 +11,8 @@ import {
   $isElementNode,
   LexicalNode,
   RangeSelection,
-  SerializedLexicalNode
+  SerializedLexicalNode,
+  SerializedElementNode,
 } from 'lexical'
 import { $convertFromMarkdownString } from '@lexical/markdown'
 import { $generateNodesFromSerializedNodes, $insertGeneratedNodes } from '@lexical/clipboard'
@@ -146,12 +147,14 @@ function isAtStartOfHeading(
 }
 
 function serializeNode(node: LexicalNode): SerializedLexicalNode {
-  const serialized = node.exportJSON() as SerializedLexicalNode
+  const serialized = node.exportJSON()
 
   if ($isElementNode(node)) {
-    serialized.children = node
+    const element = serialized as SerializedElementNode
+
+    element.children = node
       .getChildren()
-      .map((child) => serializeNode(child))
+      .map(serializeNode)
   }
 
   return serialized
