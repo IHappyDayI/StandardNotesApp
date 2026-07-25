@@ -40,6 +40,7 @@ import { useLocalPreference } from '@/Hooks/usePreference'
 import BlockPickerMenuPlugin from './Plugins/BlockPickerPlugin/BlockPickerPlugin'
 import { EditorEventSource } from '@/Types/EditorEventSource'
 import { ElementIds } from '@/Constants/ElementIDs'
+import MarkdownPastePlugin from './Plugins/MarkdownPastePlugin/MarkdownPastePlugin'
 import { NoteFromSelectionPlugin } from './Plugins/NoteFromSelectionPlugin'
 
 export const SuperNotePreviewCharLimit = 160
@@ -284,6 +285,7 @@ export const SuperEditor: FunctionComponent<Props> = ({
                 onBlur={onBlur}
               >
                 <ItemSelectionPlugin currentNote={note.current} />
+                <MarkdownPastePlugin />
                 <FilePlugin currentNote={note.current} />
                 <ItemBubblePlugin />
                 <GetMarkdownPlugin ref={getMarkdownPlugin} />
