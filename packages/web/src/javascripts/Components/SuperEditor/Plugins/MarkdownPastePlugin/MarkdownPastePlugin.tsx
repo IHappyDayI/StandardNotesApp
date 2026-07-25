@@ -8,11 +8,15 @@ import {
   $createParagraphNode,
   $isRangeSelection,
   $setSelection,
+  $isElementNode,
+  LexicalNode,
+  RangeSelection,
+  SerializedLexicalNode
 } from 'lexical'
 import { $convertFromMarkdownString } from '@lexical/markdown'
-import { $insertGeneratedNodes } from '@lexical/clipboard'
+import { $generateNodesFromSerializedNodes, $insertGeneratedNodes } from '@lexical/clipboard'
 import { MarkdownTransformers } from '../../MarkdownTransformers'
-import { $isQuoteNode } from '@lexical/rich-text'
+import { $isQuoteNode, $isHeadingNode, HeadingNode } from '@lexical/rich-text'
 import { $isCodeNode } from '@lexical/code'
 import { $isCollapsibleTitleNode } from '../CollapsiblePlugin/CollapsibleTitleNode'
 
@@ -96,6 +100,63 @@ function shouldHandleMarkdownPaste(clipboardData: DataTransfer): boolean {
   )
 }
 
+function isAtStartOfHeading(
+  selection: RangeSelection,
+): HeadingNode | null {
+  if (!selection.isCollapsed() || selection.anchor.offset !== 0) {
+    return null
+  }
+
+  const textNode = selection.anchor.getNode()
+
+  let node: LexicalNode = textNode
+  let heading: HeadingNode | null = null
+
+  // Find heading ancestor.
+  while (node.getParent() !== null) {
+    if ($isHeadingNode(node)) {
+      heading = node
+      break
+    }
+
+    node = node.getParent()!
+  }
+
+  if (heading === null) {
+    return null
+  }
+
+  // Ensure every node between the caret and heading
+  // is the first child of its parent.
+  node = textNode
+
+  while (!node.is(heading)) {
+    if (node.getPreviousSibling() !== null) {
+      return null
+    }
+
+    node = node.getParent()!
+
+    if (node === null) {
+      return null
+    }
+  }
+
+  return heading
+}
+
+function serializeNode(node: LexicalNode): SerializedLexicalNode {
+  const serialized = node.exportJSON() as SerializedLexicalNode
+
+  if ($isElementNode(node)) {
+    serialized.children = node
+      .getChildren()
+      .map((child) => serializeNode(child))
+  }
+
+  return serialized
+}
+
 export default function MarkdownPastePlugin(): JSX.Element | null {
   const [editor] = useLexicalComposerContext()
 
@@ -119,10 +180,17 @@ export default function MarkdownPastePlugin(): JSX.Element | null {
             return false
           }
 
-          const focusedNode = selection.focus.getNode()
-          if ($isQuoteNode(focusedNode) || $isCodeNode(focusedNode) || $isCollapsibleTitleNode(focusedNode)) {
+          const topLevelNode = selection.focus.getNode().getTopLevelElement()
+
+          if (
+            $isQuoteNode(topLevelNode) ||
+            $isCodeNode(topLevelNode) ||
+            $isCollapsibleTitleNode(topLevelNode)
+          ) {
             return false
           }
+
+          const initialSelection = selection.clone()
 
           // Make sure the selection is not backwards, as that causes issues when inserting.
           if (selection.isBackward()) {
@@ -131,35 +199,41 @@ export default function MarkdownPastePlugin(): JSX.Element | null {
             selection.focus = anchor
           }
 
-          // This is an edge case that gets handled later. We need to check the selection at this point though, because it changes in the next step.
-          const entireNodeSelected =
-            selection.anchor.offset == 0 && focusedNode.getTextContentSize() == selection.focus.offset
-
-          // =======================================
-          // TODO: Handle pasting at the beginning of headings / when selecting an entire child node of a heading
-          // =======================================
-
-          const initialSelection = selection.clone()
-
-          // Convert the text from the clipboard from markdown to lexical nodes without inserting them into the editor. This updates the selection.
           const tempParagraph = $createParagraphNode()
-          $convertFromMarkdownString(text, MarkdownTransformers, tempParagraph, true)
-          const children = tempParagraph.getChildren()
+
+          $convertFromMarkdownString(
+            text,
+            MarkdownTransformers,
+            tempParagraph,
+            true,
+          )
+
+          const serializedChildren = tempParagraph
+            .getChildren()
+            .map((node) => serializeNode(node))
 
           // Restore the initial selection.
-          if (!$isRangeSelection(initialSelection)) {
-            return false
-          }
           $setSelection(initialSelection)
 
-          if (entireNodeSelected) {
-            selection = $getSelection()
-            if (!$isRangeSelection(selection)) {
-              return false
-            }
+          selection = $getSelection()
+
+          if (!$isRangeSelection(selection)) {
+            return false
           }
 
-          $insertGeneratedNodes(editor, children, selection)
+          const generatedNodes =
+            $generateNodesFromSerializedNodes(serializedChildren)
+
+          const heading = isAtStartOfHeading(selection)
+          console.log(heading)
+
+          if (heading) {
+            for (const node of generatedNodes) {
+              heading.insertBefore(node, false)
+            }
+          } else {
+            $insertGeneratedNodes(editor, generatedNodes, selection)
+          }
 
           // TODO: verify test cases
           // * pasting into table
