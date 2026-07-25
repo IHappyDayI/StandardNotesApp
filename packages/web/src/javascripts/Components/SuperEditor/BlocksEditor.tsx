@@ -27,7 +27,7 @@ import { useMediaQuery, MutuallyExclusiveMediaQueryBreakpoints } from '@/Hooks/u
 import RemoteImagePlugin from './Plugins/RemoteImagePlugin/RemoteImagePlugin'
 import CodeOptionsPlugin from './Plugins/CodeOptionsPlugin/CodeOptions'
 import { SearchPlugin } from './Plugins/SearchPlugin/SearchPlugin'
-import AutoLinkPlugin from './Plugins/AutoLinkPlugin/AutoLinkPlugin'
+import LinkPastePlugin from './Plugins/LinkPastePlugin/LinkPastePlugin'
 import DatetimePlugin from './Plugins/DateTimePlugin/DateTimePlugin'
 import PasswordPlugin from './Plugins/PasswordPlugin/PasswordPlugin'
 import { CheckListPlugin } from './Plugins/CheckListPlugin'
@@ -131,7 +131,7 @@ export const BlocksEditor: FunctionComponent<BlocksEditorProps> = ({
       <SearchPlugin />
       <DatetimePlugin />
       <PasswordPlugin />
-      <AutoLinkPlugin />
+      <LinkPastePlugin />
       <GoogleDocsPastePlugin />
       {!readonly && floatingAnchorElem && (
         <>
