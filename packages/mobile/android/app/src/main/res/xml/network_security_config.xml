@@ -8,7 +8,9 @@
     </domain-config>
     <domain-config cleartextTrafficPermitted="false">
 		<domain includeSubdomains="true">raspberrypi.local</domain>
+        <domain includeSubdomains="true">rpi.local</domain>
         <trust-anchors>
+            <certificates src="system"/>
             <certificates src="user"/>
         </trust-anchors>
 	</domain-config>
