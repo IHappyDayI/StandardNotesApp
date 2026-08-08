@@ -181,7 +181,7 @@ export function getKeyboardShortcuts(platform: Platform, _environment: Environme
     {
       command: SUPER_SHOW_MARKDOWN_PREVIEW,
       key: 'm',
-      modifiers: [primaryModifier, KeyboardModifier.Shift],
+      modifiers: [primaryModifier, KeyboardModifier.Alt],
       preventDefault: true,
     },
     {
