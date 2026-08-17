@@ -89,7 +89,13 @@ const ChallengeModalPrompt: FunctionComponent<Props> = ({
       return
     }
 
-    void activatePrompt()
+    const timeout = setTimeout(() => {
+      void activatePrompt()
+    }, 0)
+
+    return () => {
+      clearTimeout(timeout)
+    }
   }, [activatePrompt, index])
 
   useEffect(() => {
